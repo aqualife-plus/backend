@@ -1,12 +1,11 @@
 package com.aqualifeplus.aqualifeplus.dto;
 
-import com.aqualifeplus.aqualifeplus.entity.Users;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 import lombok.Getter;
 
 @Getter
-public class UsersDto {
+public class UsersRequestDto {
     private Long userId;
 
     private String email;

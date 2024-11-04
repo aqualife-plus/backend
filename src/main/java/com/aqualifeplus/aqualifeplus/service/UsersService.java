@@ -1,8 +1,10 @@
 package com.aqualifeplus.aqualifeplus.service;
 
-import com.aqualifeplus.aqualifeplus.dto.UsersDto;
+import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
 
 public interface UsersService {
-    public void signUp(UsersDto usersDto);
-    public Long size();
+    public void signUp(UsersRequestDto usersRequestDto);
+    public String login(UsersRequestDto usersRequestDto);
+    public void logout(String username);
+    public String getEmails(String accessToken);
 }
