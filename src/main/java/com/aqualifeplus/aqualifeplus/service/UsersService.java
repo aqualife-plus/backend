@@ -1,10 +1,12 @@
 package com.aqualifeplus.aqualifeplus.service;
 
+import com.aqualifeplus.aqualifeplus.dto.ReturnToken;
 import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
+import jakarta.servlet.http.HttpServletRequest;
 
 public interface UsersService {
-    public void signUp(UsersRequestDto usersRequestDto);
-    public String login(UsersRequestDto usersRequestDto);
-    public void logout(String username);
-    public String getEmails(String accessToken);
+    void signUp(UsersRequestDto usersRequestDto);
+    ReturnToken login(UsersRequestDto usersRequestDto);
+    String refreshAccessToken();
+    void logout();
 }

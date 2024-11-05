@@ -1,5 +1,6 @@
 package com.aqualifeplus.aqualifeplus.entity;
 
+import com.aqualifeplus.aqualifeplus.dto.UsersResponseDto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -36,4 +37,16 @@ public class Users {
     private LocalDateTime subscriptionDate;
 
     private LocalDateTime changeDate;
+
+    public UsersResponseDto toUsersResponseDto() {
+        return UsersResponseDto.builder()
+                .userId(this.userId)
+                .email(this.email)
+                .nickname(this.nickname)
+                .phoneNumber(this.phoneNumber)
+                .accessDate(this.accessDate)
+                .subscriptionDate(this.subscriptionDate)
+                .changeDate(this.changeDate)
+                .build();
+    }
 }

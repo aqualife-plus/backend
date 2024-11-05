@@ -1,6 +1,10 @@
 package com.aqualifeplus.aqualifeplus.security;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import java.util.Date;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,21 +16,42 @@ public class JwtUtil {
     private String secretKey;
     // 추가된 메서드: 토큰 만료 시간 반환
     @Getter
-    @Value("${jwt.expirationMs}")
-    private long expirationMs ; // 1시간
+    @Value("${jwt.accessTokenExpirationMs}")
+    private long accessTokenExpirationMs;
+    @Getter
+    @Value("${jwt.refreshTokenExpirationMs}")
+    private long refreshTokenExpirationMs;
+    @Getter
+    @Value("${jwt.userTokenExpirationMs}")
+    private long userTokenExpirationMs;
 
-    public String generateToken(String username) {
+    public String makeAccessToken(String username) {
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
+                .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpirationMs))
                 .signWith(SignatureAlgorithm.HS256, secretKey)
                 .compact();
     }
 
+    public String makeUserToken(String username) {
+        return Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + userTokenExpirationMs))
+                .signWith(SignatureAlgorithm.HS256, secretKey)
+                .compact();
+    }
+
+    public String makeRefreshToken(String email) {
+        return Jwts.builder()
+                .setSubject(email)
+                .setExpiration(new Date(System.currentTimeMillis() + refreshTokenExpirationMs))
+                .signWith(SignatureAlgorithm.HS512, secretKey)
+                .compact();
+    }
+
     public String extractEmail(String token) {
-        System.out.println(token);
-        System.out.println(Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody().getSubject());
         return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody().getSubject();
     }
 
@@ -39,4 +64,19 @@ public class JwtUtil {
         }
     }
 
+    public boolean isTokenExpired(String token) {
+        try {
+            Jwts.parser()
+                    .setSigningKey(secretKey)
+                    .parseClaimsJws(token)
+                    .getBody();
+            return false; // 토큰이 유효한 경우
+        } catch (ExpiredJwtException e) {
+            return true; // 토큰이 만료된 경우
+        } catch (MalformedJwtException | SignatureException | UnsupportedJwtException | IllegalArgumentException e) {
+            // 토큰 자체가 잘못된 경우, 로그를 남기거나 추가 처리
+            System.err.println("Invalid token: " + e.getMessage());
+            return true;
+        }
+    }
 }

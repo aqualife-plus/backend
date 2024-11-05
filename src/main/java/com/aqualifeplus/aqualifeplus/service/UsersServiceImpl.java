@@ -1,11 +1,11 @@
 package com.aqualifeplus.aqualifeplus.service;
 
+import com.aqualifeplus.aqualifeplus.dto.ReturnToken;
 import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
 import com.aqualifeplus.aqualifeplus.entity.Users;
 import com.aqualifeplus.aqualifeplus.repository.UserRepository;
 import com.aqualifeplus.aqualifeplus.security.JwtUtil;
-import java.time.LocalDateTime;
-import java.util.Optional;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -19,58 +19,63 @@ public class UsersServiceImpl implements UsersService{
     private final UserRepository userRepository;
     private final RedisTemplate<String, String> redisTemplate;
 
+    private final HttpServletRequest request;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    @Override
     public void signUp(UsersRequestDto requestDto) {
-        if (userRepository.findByEmail(requestDto.getEmail()).isPresent()) {
-            throw new RuntimeException("User already exists");
-        }
+        userRepository.findByEmail(requestDto.getEmail())
+                .orElseThrow(() -> new RuntimeException("User already exists"));
 
-        Users user = Users.builder()
-                .email(requestDto.getEmail())
-                .password(passwordEncoder.encode(requestDto.getPassword()))
-                .nickname(requestDto.getNickname())
-                .phoneNumber(requestDto.getPhoneNumber())
-                .accessDate(LocalDateTime.now())
-                .subscriptionDate(LocalDateTime.now())
-                .changeDate(LocalDateTime.now())
-                .build();
-        userRepository.save(user);
-    }
-
-    public String login(UsersRequestDto usersRequestDto) {
-        String email = usersRequestDto.getEmail();
-
-        Optional<Users> user = userRepository.findByEmail(email);
-        if (user.isPresent() && passwordEncoder.matches(usersRequestDto.getPassword(), user.get().getPassword())) {
-            String token = jwtUtil.generateToken(email);
-            redisTemplate.opsForValue().set(email, token, jwtUtil.getExpirationMs(), TimeUnit.MILLISECONDS);
-            return "Bearer " + token;
-        } else {
-            throw new RuntimeException("Invalid credentials");
-        }
-    }
-
-    public void logout(String username) {
-        redisTemplate.delete(username);
+        userRepository.save(
+                requestDto.toUserForSignUp(passwordEncoder));
     }
 
     @Override
-    public String getEmails(String accessToken) {
-        System.out.println("getEmails" + accessToken);
-        return jwtUtil.extractEmail(accessToken);
+    public ReturnToken login(UsersRequestDto usersRequestDto) {
+        String email = usersRequestDto.getEmail();
+        Users user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+
+        if (passwordEncoder.matches(usersRequestDto.getPassword(), user.getPassword())) {
+            ReturnToken rt = new ReturnToken(
+                    jwtUtil.makeAccessToken(email),
+                    jwtUtil.makeUserToken(email),
+                    jwtUtil.makeRefreshToken(email));
+
+            redisTemplate.opsForValue().set(
+                    "refreshToken:" + email,
+                    rt.getRefreshToken().substring(7),
+                    jwtUtil.getRefreshTokenExpirationMs(),
+                    TimeUnit.MILLISECONDS);
+            return rt;
+        }
+
+        return null;
     }
 
-    private Users toUsers(UsersRequestDto requestDto) {
-        return Users.builder()
-                .userId(requestDto.getUserId())
-                .email(requestDto.getEmail())
-                .password(requestDto.getPassword())
-                .nickname(requestDto.getNickname())
-                .phoneNumber(requestDto.getPhoneNumber())
-                .accessDate(requestDto.getAccessDate())
-                .subscriptionDate(requestDto.getSubscriptionDate())
-                .changeDate(requestDto.getChangeDate())
-                .build();
+    @Override
+    public String refreshAccessToken() {
+        String email = jwtUtil.extractEmail(getAuthorization());
+        String storedRefreshToken
+                = redisTemplate.opsForValue().get("refreshToken:" + email);
+        if (storedRefreshToken != null && storedRefreshToken.equals(getAuthorization())) {
+            return jwtUtil.makeAccessToken(email);
+        } else {
+            throw new RuntimeException("Invalid refresh token");
+        }
+    }
+
+    @Override
+    public void logout() {
+        redisTemplate.delete("refreshToken:" + getEmail());
+    }
+
+    private String getEmail() {
+        return jwtUtil.extractEmail(getAuthorization());
+    }
+
+    private String getAuthorization() {
+        return request.getHeader("Authorization").substring(7);
     }
 }
