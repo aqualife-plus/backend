@@ -40,7 +40,6 @@ public class Users {
 
     public UsersResponseDto toUsersResponseDto() {
         return UsersResponseDto.builder()
-                .userId(this.userId)
                 .email(this.email)
                 .nickname(this.nickname)
                 .phoneNumber(this.phoneNumber)

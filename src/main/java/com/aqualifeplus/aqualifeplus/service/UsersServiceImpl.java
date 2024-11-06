@@ -1,7 +1,9 @@
 package com.aqualifeplus.aqualifeplus.service;
 
-import com.aqualifeplus.aqualifeplus.dto.ReturnToken;
+import com.aqualifeplus.aqualifeplus.dto.LoginDto;
+import com.aqualifeplus.aqualifeplus.dto.TokenDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
+import com.aqualifeplus.aqualifeplus.dto.UsersResponseDto;
 import com.aqualifeplus.aqualifeplus.entity.Users;
 import com.aqualifeplus.aqualifeplus.repository.UserRepository;
 import com.aqualifeplus.aqualifeplus.security.JwtUtil;
@@ -24,21 +26,21 @@ public class UsersServiceImpl implements UsersService{
 
     @Override
     public void signUp(UsersRequestDto requestDto) {
-        userRepository.findByEmail(requestDto.getEmail())
-                .orElseThrow(() -> new RuntimeException("User already exists"));
+        if (userRepository.findByEmail(requestDto.getEmail()).isPresent()) {
+            throw new RuntimeException("User already exists");
+        }
 
-        userRepository.save(
-                requestDto.toUserForSignUp(passwordEncoder));
+        userRepository.save(requestDto.toUserForSignUp(passwordEncoder));
     }
 
     @Override
-    public ReturnToken login(UsersRequestDto usersRequestDto) {
-        String email = usersRequestDto.getEmail();
+    public TokenDto login(LoginDto loginDto) {
+        String email = loginDto.getEmail();
         Users user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Invalid credentials"));
 
-        if (passwordEncoder.matches(usersRequestDto.getPassword(), user.getPassword())) {
-            ReturnToken rt = new ReturnToken(
+        if (passwordEncoder.matches(loginDto.getPassword(), user.getPassword())) {
+            TokenDto rt = new TokenDto(
                     jwtUtil.makeAccessToken(email),
                     jwtUtil.makeUserToken(email),
                     jwtUtil.makeRefreshToken(email));
@@ -51,7 +53,7 @@ public class UsersServiceImpl implements UsersService{
             return rt;
         }
 
-        return null;
+        throw new RuntimeException("not match password or email");
     }
 
     @Override
@@ -64,6 +66,15 @@ public class UsersServiceImpl implements UsersService{
         } else {
             throw new RuntimeException("Invalid refresh token");
         }
+    }
+
+    @Override
+    public UsersResponseDto getMyInfo() {
+        String email = jwtUtil.extractEmail(getAuthorization());
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("have not a member."))
+                .toUsersResponseDto();
     }
 
     @Override
