@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +26,7 @@ public class UsersServiceImpl implements UsersService{
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @Override
+    @Transactional
     public void signUp(UsersRequestDto requestDto) {
         if (userRepository.findByEmail(requestDto.getEmail()).isPresent()) {
             throw new RuntimeException("User already exists");
@@ -70,11 +72,28 @@ public class UsersServiceImpl implements UsersService{
 
     @Override
     public UsersResponseDto getMyInfo() {
-        String email = jwtUtil.extractEmail(getAuthorization());
-
-        return userRepository.findByEmail(email)
+        return userRepository.findByEmail(getEmail())
                 .orElseThrow(() -> new RuntimeException("have not a member."))
                 .toUsersResponseDto();
+    }
+
+    @Override
+    @Transactional
+    public UsersResponseDto updateMyInfo(UsersResponseDto usersResponseDto) {
+        Users users =  userRepository.findByEmail(getEmail())
+                .orElseThrow(() -> new RuntimeException("have not a member."));
+
+        users.setUpdateData(usersResponseDto);
+
+        return users.toUsersResponseDto();
+    }
+
+    @Override
+    public void deleteUser() {
+        Users users =  userRepository.findByEmail(getEmail())
+                .orElseThrow(() -> new RuntimeException("have not a member."));
+
+        userRepository.delete(users);
     }
 
     @Override

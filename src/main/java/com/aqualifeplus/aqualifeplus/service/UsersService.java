@@ -10,5 +10,7 @@ public interface UsersService {
     TokenDto login(LoginDto loginDto);
     String refreshAccessToken();
     UsersResponseDto getMyInfo();
+    UsersResponseDto updateMyInfo(UsersResponseDto usersResponseDto);
+    void deleteUser();
     void logout();
 }

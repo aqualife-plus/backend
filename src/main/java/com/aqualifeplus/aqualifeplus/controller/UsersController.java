@@ -2,10 +2,12 @@ package com.aqualifeplus.aqualifeplus.controller;
 
 import com.aqualifeplus.aqualifeplus.dto.LoginDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
+import com.aqualifeplus.aqualifeplus.dto.UsersResponseDto;
 import com.aqualifeplus.aqualifeplus.service.UsersService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -38,6 +40,18 @@ public class UsersController {
     @GetMapping("/my-info")
     public ResponseEntity<?> myInfo() {
         return ResponseEntity.ok(usersService.getMyInfo());
+    }
+
+    @PostMapping("/my-info")
+    public ResponseEntity<?> myInfo(@Valid @RequestBody UsersResponseDto usersResponseDto) {
+        return ResponseEntity.ok(usersService.updateMyInfo(usersResponseDto));
+    }
+
+    @DeleteMapping("/withdrawal")
+    public ResponseEntity<?> withdrawal() {
+        usersService.deleteUser();
+
+        return ResponseEntity.ok("ok");
     }
 
     @PostMapping("/logout")
