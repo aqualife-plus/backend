@@ -1,18 +1,22 @@
 package com.aqualifeplus.aqualifeplus.dto;
 
 import com.aqualifeplus.aqualifeplus.entity.Users;
+import com.aqualifeplus.aqualifeplus.enum_type.LoginPlatform;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.annotation.PostConstruct;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @Getter
+@Builder
 public class UsersRequestDto {
-    private Long userId;
-
     @Email(message = "Please enter it in email format")
     @NotEmpty(message = "Please enter email")
     private String email;
@@ -23,9 +27,11 @@ public class UsersRequestDto {
     @NotEmpty(message = "Please enter nickname")
     private String nickname;
 
-    @NotEmpty(message = "Please enter phoneNumber")
-    @Size(min = 11, max = 11, message = "Please enter 11 digits")
+    @Size(min = 11, max = 11, message = "Please enter exactly 11 digits")
+    @Pattern(regexp = "^$|^[0-9]{11}$", message = "Please enter 11 digits or leave it blank")
     private String phoneNumber;
+
+    private LoginPlatform accountType;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime accessDate;
@@ -42,6 +48,7 @@ public class UsersRequestDto {
                 .password(passwordEncoder.encode(this.getPassword()))
                 .nickname(this.nickname)
                 .phoneNumber(this.phoneNumber)
+                .accountType(this.accountType == null ? LoginPlatform.AQUA_LIFE : this.accountType)
                 .accessDate(LocalDateTime.now())
                 .subscriptionDate(LocalDateTime.now())
                 .changeDate(LocalDateTime.now())

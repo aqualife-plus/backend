@@ -1,5 +1,6 @@
-package com.aqualifeplus.aqualifeplus.security;
+package com.aqualifeplus.aqualifeplus.filter;
 
+import com.aqualifeplus.aqualifeplus.service.JwtService;
 import io.jsonwebtoken.io.IOException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -13,7 +14,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
-    private final JwtUtil jwtUtil;
+    private final JwtService jwtService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -25,7 +26,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             jwtToken = authorizationHeader.substring(7);
-            email = jwtUtil.extractEmail(jwtToken);
+            email = jwtService.extractEmail(jwtToken);
         }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {

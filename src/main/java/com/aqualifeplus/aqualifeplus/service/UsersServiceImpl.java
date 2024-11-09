@@ -5,8 +5,7 @@ import com.aqualifeplus.aqualifeplus.dto.TokenDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersResponseDto;
 import com.aqualifeplus.aqualifeplus.entity.Users;
-import com.aqualifeplus.aqualifeplus.repository.UserRepository;
-import com.aqualifeplus.aqualifeplus.security.JwtUtil;
+import com.aqualifeplus.aqualifeplus.repository.UsersRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class UsersServiceImpl implements UsersService{
-    private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
+    private final JwtService jwtService;
+    private final UsersRepository usersRepository;
     private final RedisTemplate<String, String> redisTemplate;
 
     private final HttpServletRequest request;
@@ -28,29 +27,29 @@ public class UsersServiceImpl implements UsersService{
     @Override
     @Transactional
     public void signUp(UsersRequestDto requestDto) {
-        if (userRepository.findByEmail(requestDto.getEmail()).isPresent()) {
+        if (usersRepository.findByEmail(requestDto.getEmail()).isPresent()) {
             throw new RuntimeException("User already exists");
         }
 
-        userRepository.save(requestDto.toUserForSignUp(passwordEncoder));
+        usersRepository.save(requestDto.toUserForSignUp(passwordEncoder));
     }
 
     @Override
     public TokenDto login(LoginDto loginDto) {
         String email = loginDto.getEmail();
-        Users user = userRepository.findByEmail(email)
+        Users user = usersRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Invalid credentials"));
 
         if (passwordEncoder.matches(loginDto.getPassword(), user.getPassword())) {
             TokenDto rt = new TokenDto(
-                    jwtUtil.makeAccessToken(email),
-                    jwtUtil.makeUserToken(email),
-                    jwtUtil.makeRefreshToken(email));
+                    jwtService.makeAccessToken(email),
+                    jwtService.makeUserToken(email),
+                    jwtService.makeRefreshToken(email));
 
             redisTemplate.opsForValue().set(
                     "refreshToken:" + email,
                     rt.getRefreshToken().substring(7),
-                    jwtUtil.getRefreshTokenExpirationMs(),
+                    jwtService.getRefreshTokenExpirationMs(),
                     TimeUnit.MILLISECONDS);
             return rt;
         }
@@ -60,11 +59,11 @@ public class UsersServiceImpl implements UsersService{
 
     @Override
     public String refreshAccessToken() {
-        String email = jwtUtil.extractEmail(getAuthorization());
+        String email = jwtService.extractEmail(getAuthorization());
         String storedRefreshToken
                 = redisTemplate.opsForValue().get("refreshToken:" + email);
         if (storedRefreshToken != null && storedRefreshToken.equals(getAuthorization())) {
-            return jwtUtil.makeAccessToken(email);
+            return jwtService.makeAccessToken(email);
         } else {
             throw new RuntimeException("Invalid refresh token");
         }
@@ -72,7 +71,7 @@ public class UsersServiceImpl implements UsersService{
 
     @Override
     public UsersResponseDto getMyInfo() {
-        return userRepository.findByEmail(getEmail())
+        return usersRepository.findByEmail(getEmail())
                 .orElseThrow(() -> new RuntimeException("have not a member."))
                 .toUsersResponseDto();
     }
@@ -80,7 +79,7 @@ public class UsersServiceImpl implements UsersService{
     @Override
     @Transactional
     public UsersResponseDto updateMyInfo(UsersResponseDto usersResponseDto) {
-        Users users =  userRepository.findByEmail(getEmail())
+        Users users =  usersRepository.findByEmail(getEmail())
                 .orElseThrow(() -> new RuntimeException("have not a member."));
 
         users.setUpdateData(usersResponseDto);
@@ -90,10 +89,10 @@ public class UsersServiceImpl implements UsersService{
 
     @Override
     public void deleteUser() {
-        Users users =  userRepository.findByEmail(getEmail())
+        Users users =  usersRepository.findByEmail(getEmail())
                 .orElseThrow(() -> new RuntimeException("have not a member."));
 
-        userRepository.delete(users);
+        usersRepository.delete(users);
     }
 
     @Override
@@ -102,7 +101,7 @@ public class UsersServiceImpl implements UsersService{
     }
 
     private String getEmail() {
-        return jwtUtil.extractEmail(getAuthorization());
+        return jwtService.extractEmail(getAuthorization());
     }
 
     private String getAuthorization() {

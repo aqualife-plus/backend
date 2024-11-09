@@ -13,12 +13,23 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.view.RedirectView;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/users")
 public class UsersController {
     private final UsersService usersService;
+
+    @GetMapping("/google/login")
+    public RedirectView googleLogin() {
+        return new RedirectView("/oauth2/authorization/google");
+    }
+
+    @GetMapping("/naver/login")
+    public RedirectView naverLogin() {
+        return new RedirectView("/oauth2/authorization/naver");
+    }
 
     @PostMapping("/signup")
     public ResponseEntity<?> signUp(@Valid @RequestBody UsersRequestDto usersRequestDto) {

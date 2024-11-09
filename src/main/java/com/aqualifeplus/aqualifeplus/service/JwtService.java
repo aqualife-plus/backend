@@ -1,4 +1,4 @@
-package com.aqualifeplus.aqualifeplus.security;
+package com.aqualifeplus.aqualifeplus.service;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
-public class JwtUtil {
+public class JwtService {
     @Value("${jwt.secretKey}")
     private String secretKey;
     // 추가된 메서드: 토큰 만료 시간 반환
@@ -19,11 +19,11 @@ public class JwtUtil {
     @Value("${jwt.accessTokenExpirationMs}")
     private long accessTokenExpirationMs;
     @Getter
-    @Value("${jwt.refreshTokenExpirationMs}")
-    private long refreshTokenExpirationMs;
-    @Getter
     @Value("${jwt.userTokenExpirationMs}")
     private long userTokenExpirationMs;
+    @Getter
+    @Value("${jwt.refreshTokenExpirationMs}")
+    private long refreshTokenExpirationMs;
 
     public String makeAccessToken(String username) {
         return Jwts.builder()
