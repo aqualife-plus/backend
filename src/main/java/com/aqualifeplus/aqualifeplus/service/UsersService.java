@@ -6,7 +6,7 @@ import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersResponseDto;
 
 public interface UsersService {
-    void signUp(UsersRequestDto usersRequestDto);
+    boolean signUp(UsersRequestDto usersRequestDto);
     TokenDto login(LoginDto loginDto);
     String refreshAccessToken();
     UsersResponseDto getMyInfo();

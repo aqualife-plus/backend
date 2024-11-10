@@ -33,8 +33,7 @@ public class UsersController {
 
     @PostMapping("/signup")
     public ResponseEntity<?> signUp(@Valid @RequestBody UsersRequestDto usersRequestDto) {
-        usersService.signUp(usersRequestDto);
-        return ResponseEntity.ok("ok");
+        return ResponseEntity.ok(usersService.signUp(usersRequestDto));
     }
 
     @PostMapping("/login")

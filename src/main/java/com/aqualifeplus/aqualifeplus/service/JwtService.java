@@ -1,4 +1,5 @@
 package com.aqualifeplus.aqualifeplus.service;
+
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
@@ -8,9 +9,9 @@ import io.jsonwebtoken.security.SignatureException;
 import java.util.Date;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 public class JwtService {
     @Value("${jwt.secretKey}")
     private String secretKey;

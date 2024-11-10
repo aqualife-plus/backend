@@ -26,12 +26,13 @@ public class UsersServiceImpl implements UsersService{
 
     @Override
     @Transactional
-    public void signUp(UsersRequestDto requestDto) {
+    public boolean signUp(UsersRequestDto requestDto) {
         if (usersRepository.findByEmail(requestDto.getEmail()).isPresent()) {
             throw new RuntimeException("User already exists");
         }
 
         usersRepository.save(requestDto.toUserForSignUp(passwordEncoder));
+        return true;
     }
 
     @Override

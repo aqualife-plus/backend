@@ -44,7 +44,6 @@ public class Users {
 
     public UsersResponseDto toUsersResponseDto() {
         return UsersResponseDto.builder()
-                .email(this.email)
                 .nickname(this.nickname)
                 .phoneNumber(this.phoneNumber)
                 .accessDate(this.accessDate)
