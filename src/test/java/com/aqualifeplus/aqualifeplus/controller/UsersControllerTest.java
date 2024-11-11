@@ -86,4 +86,180 @@ class UsersControllerTest {
 
         System.out.println("responseValue = " + responseValue);
     }
+
+    @Test
+    @DisplayName("로그인 성공")
+    void test() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("로그인 실패 -> 이메일과 비밀번호가 매칭 X")
+    void test1() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("로그인 실패 -> 입력 이메일과 매칭되는 계정이 없음")
+    void test2() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("카카오 로그인 성공")
+    void test3() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("카카오 로그인 실패 -> ?")
+    void test4() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("구글 로그인 성공")
+    void test5() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("구글 로그인 실패 -> ?")
+    void test6() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("refresh 토큰으로 accessToken 생성 성공")
+    void test7() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("refresh 토큰으로 accessToken 생성 실패 -> 해당 user없음")
+    void test8() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("refresh 토큰으로 accessToken 생성 실패 -> token만료시간이 넘음")
+    void test9() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("회원정보 get 성공")
+    void test10() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("회원정보 get 실패 -> token만료")
+    void test11() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("회원정보 get 실패 -> 해당 회원 정보 X")
+    void test12() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("회원정보 post 성공")
+    void test13() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("회원정보 post 실패 -> token만료")
+    void test14() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("회원정보 post 실패 -> 해당 회원 정보 X")
+    void test15() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("회원 delete 성공")
+    void test16() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("회원 delete 실패 -> token만료")
+    void test17() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("회원 delete 실패 -> 해당 회원 정보 X")
+    void test18() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("회원 logout 성공")
+    void test19() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("회원 logout 실패 -> token만료")
+    void test20() throws Exception {
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("회원 logout 실패 -> 해당 회원 정보 X")
+    void test21() throws Exception {
+        //given
+        //when
+        //then
+    }
 }
