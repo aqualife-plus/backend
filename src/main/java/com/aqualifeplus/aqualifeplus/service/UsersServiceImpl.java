@@ -42,7 +42,7 @@ public class UsersServiceImpl implements UsersService{
     public TokenDto login(LoginDto loginDto) {
         String email = loginDto.getEmail();
         Users user = usersRepository.findByEmail(email)
-                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
         if (passwordEncoder.matches(loginDto.getPassword(), user.getPassword())) {
             TokenDto rt = new TokenDto(

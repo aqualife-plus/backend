@@ -41,7 +41,7 @@ public class UsersController {
         return ResponseEntity.ok(usersService.login(loginDto));
     }
 
-    @PostMapping("/refresh")
+    @PostMapping("/refresh-token")
     public ResponseEntity<?> refreshAccessToken() {
         return ResponseEntity.ok(
                 usersService.refreshAccessToken());
