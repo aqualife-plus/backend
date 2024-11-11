@@ -1,6 +1,5 @@
-package com.aqualifeplus.aqualifeplus.filter;
+package com.aqualifeplus.aqualifeplus.jwt;
 
-import com.aqualifeplus.aqualifeplus.service.JwtService;
 import io.jsonwebtoken.io.IOException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

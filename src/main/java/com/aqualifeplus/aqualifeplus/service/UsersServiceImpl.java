@@ -5,6 +5,9 @@ import com.aqualifeplus.aqualifeplus.dto.TokenDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersResponseDto;
 import com.aqualifeplus.aqualifeplus.entity.Users;
+import com.aqualifeplus.aqualifeplus.exception.CustomException;
+import com.aqualifeplus.aqualifeplus.exception.ErrorCode;
+import com.aqualifeplus.aqualifeplus.jwt.JwtService;
 import com.aqualifeplus.aqualifeplus.repository.UsersRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.concurrent.TimeUnit;
@@ -28,7 +31,7 @@ public class UsersServiceImpl implements UsersService{
     @Transactional
     public boolean signUp(UsersRequestDto requestDto) {
         if (usersRepository.findByEmail(requestDto.getEmail()).isPresent()) {
-            throw new RuntimeException("User already exists");
+            throw new CustomException(ErrorCode.USER_ALREADY_EXISTS);
         }
 
         usersRepository.save(requestDto.toUserForSignUp(passwordEncoder));
@@ -39,7 +42,7 @@ public class UsersServiceImpl implements UsersService{
     public TokenDto login(LoginDto loginDto) {
         String email = loginDto.getEmail();
         Users user = usersRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_CREDENTIALS));
 
         if (passwordEncoder.matches(loginDto.getPassword(), user.getPassword())) {
             TokenDto rt = new TokenDto(
@@ -55,7 +58,7 @@ public class UsersServiceImpl implements UsersService{
             return rt;
         }
 
-        throw new RuntimeException("not match password or email");
+        throw new CustomException(ErrorCode.NOT_MATCH_PASSWORD_OR_EMAIL);
     }
 
     @Override
@@ -66,14 +69,14 @@ public class UsersServiceImpl implements UsersService{
         if (storedRefreshToken != null && storedRefreshToken.equals(getAuthorization())) {
             return jwtService.makeAccessToken(email);
         } else {
-            throw new RuntimeException("Invalid refresh token");
+            throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
     }
 
     @Override
     public UsersResponseDto getMyInfo() {
         return usersRepository.findByEmail(getEmail())
-                .orElseThrow(() -> new RuntimeException("have not a member."))
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER))
                 .toUsersResponseDto();
     }
 
@@ -81,7 +84,7 @@ public class UsersServiceImpl implements UsersService{
     @Transactional
     public UsersResponseDto updateMyInfo(UsersResponseDto usersResponseDto) {
         Users users =  usersRepository.findByEmail(getEmail())
-                .orElseThrow(() -> new RuntimeException("have not a member."));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
         users.setUpdateData(usersResponseDto);
 
@@ -91,7 +94,7 @@ public class UsersServiceImpl implements UsersService{
     @Override
     public void deleteUser() {
         Users users =  usersRepository.findByEmail(getEmail())
-                .orElseThrow(() -> new RuntimeException("have not a member."));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
         usersRepository.delete(users);
     }

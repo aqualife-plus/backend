@@ -9,12 +9,13 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.ToString;
+
+import lombok.*;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @Getter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class UsersRequestDto {
     @Email(message = "Please enter it in email format")

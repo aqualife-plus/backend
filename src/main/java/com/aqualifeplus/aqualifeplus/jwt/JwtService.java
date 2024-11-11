@@ -1,4 +1,4 @@
-package com.aqualifeplus.aqualifeplus.service;
+package com.aqualifeplus.aqualifeplus.jwt;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;

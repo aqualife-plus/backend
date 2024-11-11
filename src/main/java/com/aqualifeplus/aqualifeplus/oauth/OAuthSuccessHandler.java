@@ -1,4 +1,4 @@
-package com.aqualifeplus.aqualifeplus.handler;
+package com.aqualifeplus.aqualifeplus.oauth;
 
 import com.aqualifeplus.aqualifeplus.dto.LoginDto;
 import com.aqualifeplus.aqualifeplus.dto.TokenDto;

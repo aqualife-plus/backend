@@ -1,9 +1,9 @@
 package com.aqualifeplus.aqualifeplus.config;
 
-import com.aqualifeplus.aqualifeplus.service.CustomOAuthUserService;
-import com.aqualifeplus.aqualifeplus.filter.JwtAuthenticationFilter;
-import com.aqualifeplus.aqualifeplus.service.JwtService;
-import com.aqualifeplus.aqualifeplus.handler.OAuthSuccessHandler;
+import com.aqualifeplus.aqualifeplus.oauth.CustomOAuthUserService;
+import com.aqualifeplus.aqualifeplus.jwt.JwtAuthenticationFilter;
+import com.aqualifeplus.aqualifeplus.jwt.JwtService;
+import com.aqualifeplus.aqualifeplus.oauth.OAuthSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

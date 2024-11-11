@@ -1,6 +1,5 @@
-package com.aqualifeplus.aqualifeplus.filter;
+package com.aqualifeplus.aqualifeplus.jwt;
 
-import com.aqualifeplus.aqualifeplus.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

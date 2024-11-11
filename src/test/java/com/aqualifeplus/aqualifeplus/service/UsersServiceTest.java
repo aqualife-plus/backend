@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
 import com.aqualifeplus.aqualifeplus.entity.Users;
+import com.aqualifeplus.aqualifeplus.jwt.JwtService;
 import com.aqualifeplus.aqualifeplus.repository.UsersRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

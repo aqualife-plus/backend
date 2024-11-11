@@ -1,4 +1,4 @@
-package com.aqualifeplus.aqualifeplus.service;
+package com.aqualifeplus.aqualifeplus.oauth;
 
 import com.aqualifeplus.aqualifeplus.entity.CustomOAuthUsers;
 import com.aqualifeplus.aqualifeplus.enum_type.LoginPlatform;
