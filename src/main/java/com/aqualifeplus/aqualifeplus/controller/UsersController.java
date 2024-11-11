@@ -1,6 +1,7 @@
 package com.aqualifeplus.aqualifeplus.controller;
 
 import com.aqualifeplus.aqualifeplus.dto.LoginDto;
+import com.aqualifeplus.aqualifeplus.dto.PasswordChangeDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersResponseDto;
 import com.aqualifeplus.aqualifeplus.service.UsersService;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -55,6 +57,11 @@ public class UsersController {
     @PostMapping("/my-info")
     public ResponseEntity<?> myInfo(@Valid @RequestBody UsersResponseDto usersResponseDto) {
         return ResponseEntity.ok(usersService.updateMyInfo(usersResponseDto));
+    }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(@Valid @RequestBody PasswordChangeDto passwordUpdateRequestDto) {
+        return ResponseEntity.ok(usersService.changePassword(passwordUpdateRequestDto));
     }
 
     @DeleteMapping("/withdrawal")

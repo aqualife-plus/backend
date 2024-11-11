@@ -26,29 +26,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String token = request.getHeader("Authorization");
 
-        try {
-            if (token != null && token.startsWith("Bearer ")) {
-                String jwt = token.substring(7);
-                String email = jwtService.extractEmail(jwt);
+        // Bearer 토큰이 있는지 확인하고 시작
+        if (token != null && token.startsWith("Bearer ")) {
+            String jwt = token.substring(7); // "Bearer " 이후의 JWT 추출
+            String email = jwtService.extractEmail(jwt);
 
-                if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UsernamePasswordAuthenticationToken authenticationToken =
-                            new UsernamePasswordAuthenticationToken(email, null, new ArrayList<>());
-                    authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            // 이메일이 유효하고, 현재 SecurityContext에 인증 객체가 설정되지 않은 경우에만 인증을 설정
+            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                // 인증 객체 생성
+                UsernamePasswordAuthenticationToken authenticationToken =
+                        new UsernamePasswordAuthenticationToken(email, null, new ArrayList<>());
+                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-                } else {
-                    throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
-                }
-            } else {
-                throw new CustomException(ErrorCode.INVALID_TOKEN_OR_NOT_START_BEARER);
+                // SecurityContext에 인증 객체 설정
+                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
             }
+        }
 
+        // 예외 없이 정상적으로 요청을 계속 진행하도록 필터 체인 실행
+        try {
             filterChain.doFilter(request, response);
         } catch (CustomException ex) {
+            // CustomException 발생 시 응답에 에러 메시지와 상태 코드 설정
             response.setStatus(ex.getStatus().value());
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"" + "token error" + "\"}");
+            response.getWriter().write("{\"error\": \"" + ex.getMessage() + "\"}");
             response.getWriter().flush();
         }
     }

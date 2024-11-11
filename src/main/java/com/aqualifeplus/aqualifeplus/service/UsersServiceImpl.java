@@ -1,6 +1,7 @@
 package com.aqualifeplus.aqualifeplus.service;
 
 import com.aqualifeplus.aqualifeplus.dto.LoginDto;
+import com.aqualifeplus.aqualifeplus.dto.PasswordChangeDto;
 import com.aqualifeplus.aqualifeplus.dto.TokenDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersResponseDto;
@@ -41,10 +42,10 @@ public class UsersServiceImpl implements UsersService{
     @Override
     public TokenDto login(LoginDto loginDto) {
         String email = loginDto.getEmail();
-        Users user = usersRepository.findByEmail(email)
+        Users users = usersRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
-        if (passwordEncoder.matches(loginDto.getPassword(), user.getPassword())) {
+        if (passwordEncoder.matches(loginDto.getPassword(), users.getPassword())) {
             TokenDto rt = new TokenDto(
                     jwtService.makeAccessToken(email),
                     jwtService.makeUserToken(email),
@@ -89,6 +90,22 @@ public class UsersServiceImpl implements UsersService{
         users.setUpdateData(usersResponseDto);
 
         return users.toUsersResponseDto();
+    }
+
+    @Override
+    @Transactional
+    public boolean changePassword(PasswordChangeDto passwordUpdateRequestDto) {
+        Users users =  usersRepository.findByEmail(getEmail())
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
+        if (passwordEncoder.matches(
+                passwordUpdateRequestDto.getOldPassword(), users.getPassword())) {
+            users.setPassword(
+                    passwordEncoder.encode(passwordUpdateRequestDto.getChangePassword()));
+            return true;
+        }
+
+        return false;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.aqualifeplus.aqualifeplus.service;
 
 import com.aqualifeplus.aqualifeplus.dto.LoginDto;
+import com.aqualifeplus.aqualifeplus.dto.PasswordChangeDto;
 import com.aqualifeplus.aqualifeplus.dto.TokenDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersResponseDto;
@@ -11,6 +12,7 @@ public interface UsersService {
     String refreshAccessToken();
     UsersResponseDto getMyInfo();
     UsersResponseDto updateMyInfo(UsersResponseDto usersResponseDto);
+    boolean changePassword(PasswordChangeDto passwordUpdateRequestDto);
     void deleteUser();
     void logout();
 }

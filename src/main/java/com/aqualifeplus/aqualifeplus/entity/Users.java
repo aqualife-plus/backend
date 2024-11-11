@@ -14,6 +14,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Getter
@@ -27,6 +28,7 @@ public class Users {
 
     private String email;
 
+    @Setter
     private String password;
 
     private String nickname;
