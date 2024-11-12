@@ -54,7 +54,7 @@ public class UsersController {
         return ResponseEntity.ok(usersService.getMyInfo());
     }
 
-    @PostMapping("/my-info")
+    @PutMapping("/my-info")
     public ResponseEntity<?> myInfo(@Valid @RequestBody UsersResponseDto usersResponseDto) {
         return ResponseEntity.ok(usersService.updateMyInfo(usersResponseDto));
     }

@@ -2,11 +2,14 @@ package com.aqualifeplus.aqualifeplus.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.aqualifeplus.aqualifeplus.config.SecurityConfig;
@@ -35,6 +38,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 
 @Import(SecurityConfig.class)
 @WebMvcTest(UsersController.class)
@@ -135,7 +139,8 @@ class UsersControllerTest {
                 .getResponse().getContentAsString();
 
         Map<String, String> responseMap =
-                objectMapper.readValue(responseValue, new TypeReference<>() {});
+                objectMapper.readValue(responseValue, new TypeReference<>() {
+                });
 
         assertEquals("Bearer accessTokenValue", responseMap.get("accessToken"));
         assertEquals("userTokenValue", responseMap.get("userToken"));
@@ -238,7 +243,8 @@ class UsersControllerTest {
         //then
         String responseValue = mockMvc.perform(get("/users/my-info")
                         .header("Authorization", accessTokenExample) // 헤더에 refreshToken 추가
-                        .contentType(MediaType.APPLICATION_JSON))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(usersResponseDto)))
                 .andExpect(status().isOk())
                 .andDo(print())
                 .andReturn()
@@ -296,27 +302,55 @@ class UsersControllerTest {
     }
 
     @Test
-    @DisplayName("회원정보 post 성공")
-    void test13() throws Exception {
+    @DisplayName("회원정보 update 성공")
+    @WithMockUser
+    void successUpdateMyInfo() throws Exception {
         //given
+        String accessTokenExample = "Bearer accessTokenExample";
+        UsersResponseDto afterResponseDto = UsersResponseDto.builder()
+                .nickname("update nick")
+                .phoneNumber("01011112222")
+                .build();
         //when
         //then
+        String responseValue = mockMvc.perform(put("/users/my-info")
+                        .header("Authorization", accessTokenExample)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(afterResponseDto)))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn()
+                .getResponse().getContentAsString();
+
+        UsersResponseDto responseDtoMapper =
+                objectMapper.readValue(responseValue, UsersResponseDto.class);
+
+        assertEquals(afterResponseDto.getNickname(), responseDtoMapper.getNickname());
+        assertEquals(afterResponseDto.getPhoneNumber(), responseDtoMapper.getPhoneNumber());
     }
 
     @Test
-    @DisplayName("회원정보 post 실패 -> token만료")
-    void test14() throws Exception {
+    @DisplayName("회원정보 update 실패 -> valid error")
+    @WithMockUser
+    void failUpdateMyInfo_DtoValidError() throws Exception {
         //given
+        String accessTokenExample = "Bearer accessTokenExample";
+        UsersResponseDto afterResponseDto = UsersResponseDto.builder()
+                .nickname("")
+                .phoneNumber("0101112222")
+                .build();
         //when
         //then
-    }
-
-    @Test
-    @DisplayName("회원정보 post 실패 -> 해당 회원 정보 X")
-    void test15() throws Exception {
-        //given
-        //when
-        //then
+        mockMvc.perform(put("/users/my-info")
+                        .header("Authorization", accessTokenExample)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(afterResponseDto))) // 유효하지 않은 데이터 전송
+                .andExpect(status().isBadRequest())  // 400 상태 코드 기대
+                .andExpect(result
+                        -> assertInstanceOf(MethodArgumentNotValidException.class, result.getResolvedException()))
+                .andExpect(jsonPath("$.errors[0].field").value("nickname"))
+                .andExpect(jsonPath("$.errors[1].field").value("phoneNumber"))
+                .andDo(print());
     }
 
     @Test
