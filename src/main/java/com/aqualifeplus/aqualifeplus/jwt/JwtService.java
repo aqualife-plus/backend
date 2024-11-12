@@ -1,12 +1,17 @@
 package com.aqualifeplus.aqualifeplus.jwt;
 
+import com.aqualifeplus.aqualifeplus.exception.CustomException;
+import com.aqualifeplus.aqualifeplus.exception.ErrorCode;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.SignatureException;
+import java.util.Base64;
 import java.util.Date;
+import javax.crypto.spec.SecretKeySpec;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -27,57 +32,46 @@ public class JwtService {
     private long refreshTokenExpirationMs;
 
     public String makeAccessToken(String username) {
-        return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpirationMs))
-                .signWith(SignatureAlgorithm.HS256, secretKey)
-                .compact();
+        return getJwtToken(username, accessTokenExpirationMs);
     }
 
     public String makeUserToken(String username) {
+        return getJwtToken(username, userTokenExpirationMs);
+    }
+
+    public String makeRefreshToken(String username) {
+        return getJwtToken(username, refreshTokenExpirationMs);
+    }
+
+    private String getJwtToken(String username, long tokenExpirationMs) {
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + userTokenExpirationMs))
-                .signWith(SignatureAlgorithm.HS256, secretKey)
-                .compact();
-    }
-
-    public String makeRefreshToken(String email) {
-        return Jwts.builder()
-                .setSubject(email)
-                .setExpiration(new Date(System.currentTimeMillis() + refreshTokenExpirationMs))
-                .signWith(SignatureAlgorithm.HS512, secretKey)
+                .setExpiration(new Date(System.currentTimeMillis() + tokenExpirationMs))
+                .signWith(
+                        new SecretKeySpec(Base64.getDecoder().decode(secretKey), SignatureAlgorithm.HS256.getJcaName()))
                 .compact();
     }
 
     public String extractEmail(String token) {
-        return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody().getSubject();
-    }
-
-    public boolean extractClaims(String token) {
-        try {
-            Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        return getClaims(token).getSubject();
     }
 
     public boolean isTokenExpired(String token) {
+        return getClaims(token).getExpiration().before(new Date());
+    }
+
+    public Claims getClaims(String token) {
         try {
-            Jwts.parser()
+            return Jwts.parserBuilder()
                     .setSigningKey(secretKey)
+                    .build()
                     .parseClaimsJws(token)
                     .getBody();
-            return false; // 토큰이 유효한 경우
         } catch (ExpiredJwtException e) {
-            return true; // 토큰이 만료된 경우
-        } catch (MalformedJwtException | SignatureException | UnsupportedJwtException | IllegalArgumentException e) {
-            // 토큰 자체가 잘못된 경우, 로그를 남기거나 추가 처리
-            System.err.println("Invalid token: " + e.getMessage());
-            return true;
+            throw new CustomException(ErrorCode.EXPIRED_TOKEN);
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.INVALID_CREDENTIALS);
         }
     }
 }

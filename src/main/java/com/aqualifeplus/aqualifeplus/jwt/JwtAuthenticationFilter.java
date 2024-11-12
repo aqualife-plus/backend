@@ -8,7 +8,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,43 +19,53 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
+    private final List<String> excludedPaths =
+            Arrays.asList(
+                    "/users/login",
+                    "/users/signup",
+                    "/users/google/login",
+                    "/users/naver/login");
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException{
+        // 로그인, 회원가입 API URL이 포함되는지 확인하는 함수
+        return excludedPaths.stream().anyMatch(request.getRequestURI()::startsWith);
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String token = request.getHeader("Authorization");
 
-        // Bearer 토큰이 있는지 확인하고 시작
-        if (token != null && token.startsWith("Bearer ")) {
-            String jwt = token.substring(7); // "Bearer " 이후의 JWT 추출
-            String email = jwtService.extractEmail(jwt);
+        try{
+            String jwt = token.substring(7);
 
-            // 이메일이 유효하고, 현재 SecurityContext에 인증 객체가 설정되지 않은 경우에만 인증을 설정
+            jwtService.getClaims(jwt);
+
+            String email = jwtService.extractEmail(jwt);
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                // 인증 객체 생성
                 UsernamePasswordAuthenticationToken authenticationToken =
                         new UsernamePasswordAuthenticationToken(email, null, new ArrayList<>());
                 authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                // SecurityContext에 인증 객체 설정
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
             }
-        }
-
-        // 예외 없이 정상적으로 요청을 계속 진행하도록 필터 체인 실행
-        try {
-            filterChain.doFilter(request, response);
         } catch (CustomException ex) {
-            // CustomException 발생 시 응답에 에러 메시지와 상태 코드 설정
+            response.setCharacterEncoding("UTF-8");
             response.setStatus(ex.getStatus().value());
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"" + ex.getMessage() + "\"}");
+            response.getWriter().write("{\"status\": \"" + ex.getStatus().getReasonPhrase().toUpperCase() + "\",\n");
+            response.getWriter().write("\"errorCode\": \"" + ex.getErrorCode() + "\",\n");
+            response.getWriter().write("\"message\": \"" + ex.getMessage() + "\"}");
             response.getWriter().flush();
+            return;
         }
+
+        filterChain.doFilter(request, response);
     }
 }
 

@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -31,11 +32,14 @@ public class SecurityConfig {
                         .requestMatchers("/users/login", "/users/signup", "/users/google/login", "/users/naver/login").permitAll()
                         .anyRequest().authenticated()
                 )
+                .httpBasic(httpBasic -> {})
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class)
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuthUserService))
-                        .successHandler(oAuthSuccessHandler) // OAuth2 성공 시 커스텀 핸들러 사용
+                        .successHandler(oAuthSuccessHandler)
                 );
 
         return http.build();

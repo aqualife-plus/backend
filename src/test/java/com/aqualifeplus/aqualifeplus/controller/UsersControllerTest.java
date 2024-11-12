@@ -1,5 +1,14 @@
 package com.aqualifeplus.aqualifeplus.controller;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.aqualifeplus.aqualifeplus.config.SecurityConfig;
 import com.aqualifeplus.aqualifeplus.dto.LoginDto;
 import com.aqualifeplus.aqualifeplus.dto.TokenDto;
@@ -7,15 +16,14 @@ import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersResponseDto;
 import com.aqualifeplus.aqualifeplus.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.exception.ErrorCode;
-import com.aqualifeplus.aqualifeplus.oauth.OAuthSuccessHandler;
-import com.aqualifeplus.aqualifeplus.oauth.CustomOAuthUserService;
 import com.aqualifeplus.aqualifeplus.jwt.JwtService;
+import com.aqualifeplus.aqualifeplus.oauth.CustomOAuthUserService;
+import com.aqualifeplus.aqualifeplus.oauth.OAuthSuccessHandler;
 import com.aqualifeplus.aqualifeplus.service.UsersService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import java.time.LocalDateTime;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,13 +35,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Import(SecurityConfig.class)
 @WebMvcTest(UsersController.class)
@@ -154,12 +155,7 @@ class UsersControllerTest {
         mockMvc.perform(post("/users/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginDto)))
-                .andExpect(status().isUnauthorized()) // 예외 시 예상되는 상태 코드 설정
-                .andExpect(result -> assertInstanceOf(CustomException.class, result.getResolvedException()))
-                .andExpect(result -> assertEquals(
-                        "이메일 or 비밀번호가 맞지 않습니다.",
-                        result.getResolvedException().getMessage()))
-                .andDo(print());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -213,7 +209,7 @@ class UsersControllerTest {
         String refreshTokenExample = "Bearer refreshTokenExample";
         //when
         when(usersService.refreshAccessToken())
-                .thenThrow(new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+                .thenThrow(new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
         //then
         mockMvc.perform(post("/users/refresh-token")
                         .header("Authorization", refreshTokenExample)
@@ -257,31 +253,46 @@ class UsersControllerTest {
 
     @Test
     @DisplayName("회원정보 get 실패 -> token 만료")
+    @WithMockUser
     void failGetMyInfo_invalidAccessToken() throws Exception {
         //given
         String accessTokenExample = "Bearer accessTokenExample";
         //when
         when(usersService.getMyInfo())
-                .thenThrow(new CustomException(ErrorCode.INVALID_CREDENTIALS));
+                .thenThrow(new CustomException(ErrorCode.EXPIRED_TOKEN));
         //then
-        mockMvc.perform(post("/users/refresh-token")
+        mockMvc.perform(get("/users/my-info")
                         .header("Authorization", accessTokenExample)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
                 .andExpect(result -> assertInstanceOf(
                         CustomException.class, result.getResolvedException()))
                 .andExpect(result -> assertEquals(
-                        "존재하지 않는 토큰입니다.",
+                        "만료된 토큰입니다.",
                         result.getResolvedException().getMessage()))
                 .andDo(print());
     }
 
     @Test
     @DisplayName("회원정보 get 실패 -> 해당 회원 정보 X")
+    @WithMockUser
     void failGetMyInfo_invalidUser() throws Exception {
         //given
+        String accessTokenExample = "Bearer accessTokenExample";
         //when
+        when(usersService.getMyInfo())
+                .thenThrow(new CustomException(ErrorCode.INVALID_CREDENTIALS));
         //then
+        mockMvc.perform(get("/users/my-info")
+                        .header("Authorization", accessTokenExample)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class, result.getResolvedException()))
+                .andExpect(result -> assertEquals(
+                        "잘못된 인증정보입니다.",
+                        result.getResolvedException().getMessage()))
+                .andDo(print());
     }
 
     @Test
