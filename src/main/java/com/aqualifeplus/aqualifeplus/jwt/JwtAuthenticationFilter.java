@@ -29,7 +29,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     "/users/login",
                     "/users/signup",
                     "/users/google/login",
-                    "/users/naver/login");
+                    "/users/naver/login",
+                    "/users/check-email");
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException{

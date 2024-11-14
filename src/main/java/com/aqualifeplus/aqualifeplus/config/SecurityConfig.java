@@ -29,7 +29,12 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests((requests) -> requests
-                        .requestMatchers("/users/login", "/users/signup", "/users/google/login", "/users/naver/login").permitAll()
+                        .requestMatchers(
+                                "/users/login",
+                                "/users/signup",
+                                "/users/google/login",
+                                "/users/naver/login",
+                                "/users/check-email").permitAll()
                         .anyRequest().authenticated()
                 )
                 .httpBasic(httpBasic -> {})

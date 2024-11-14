@@ -1,8 +1,9 @@
 package com.aqualifeplus.aqualifeplus.service;
 
-import com.aqualifeplus.aqualifeplus.dto.LoginDto;
+import com.aqualifeplus.aqualifeplus.dto.LoginRequestDto;
 import com.aqualifeplus.aqualifeplus.dto.PasswordChangeDto;
-import com.aqualifeplus.aqualifeplus.dto.TokenDto;
+import com.aqualifeplus.aqualifeplus.dto.SignUpDto;
+import com.aqualifeplus.aqualifeplus.dto.TokenResponseDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersResponseDto;
 import com.aqualifeplus.aqualifeplus.entity.Users;
@@ -12,7 +13,9 @@ import com.aqualifeplus.aqualifeplus.jwt.JwtService;
 import com.aqualifeplus.aqualifeplus.repository.UsersRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.validator.internal.constraintvalidators.bv.EmailValidator;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -30,23 +33,35 @@ public class UsersServiceImpl implements UsersService{
 
     @Override
     @Transactional
-    public boolean signUp(UsersRequestDto requestDto) {
+    public SignUpDto signUp(UsersRequestDto requestDto) {
         if (usersRepository.findByEmail(requestDto.getEmail()).isPresent()) {
             throw new CustomException(ErrorCode.USER_ALREADY_EXISTS);
         }
 
         usersRepository.save(requestDto.toUserForSignUp(passwordEncoder));
-        return true;
+        return new SignUpDto(
+                true,
+                requestDto.getEmail());
     }
 
     @Override
-    public TokenDto login(LoginDto loginDto) {
-        String email = loginDto.getEmail();
+    public boolean checkEmail(String email) {
+        String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
+        if (email == null || !Pattern.matches(emailRegex, email)) {
+            throw new CustomException(ErrorCode.NULL_AND_NOT_FORMAT_EMAIL);
+        }
+
+        return !usersRepository.existsByEmail(email);
+    }
+
+    @Override
+    public TokenResponseDto login(LoginRequestDto loginRequestDto) {
+        String email = loginRequestDto.getEmail();
         Users users = usersRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
-        if (passwordEncoder.matches(loginDto.getPassword(), users.getPassword())) {
-            TokenDto rt = new TokenDto(
+        if (passwordEncoder.matches(loginRequestDto.getPassword(), users.getPassword())) {
+            TokenResponseDto rt = new TokenResponseDto(
                     jwtService.makeAccessToken(email),
                     jwtService.makeUserToken(email),
                     jwtService.makeRefreshToken(email));
@@ -83,13 +98,13 @@ public class UsersServiceImpl implements UsersService{
 
     @Override
     @Transactional
-    public UsersResponseDto updateMyInfo(UsersResponseDto usersResponseDto) {
+    public boolean updateMyInfo(UsersResponseDto usersResponseDto) {
         Users users =  usersRepository.findByEmail(getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
         users.setUpdateData(usersResponseDto);
 
-        return users.toUsersResponseDto();
+        return true;
     }
 
     @Override
@@ -109,16 +124,19 @@ public class UsersServiceImpl implements UsersService{
     }
 
     @Override
-    public void deleteUser() {
+    public boolean deleteUser() {
         Users users =  usersRepository.findByEmail(getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
         usersRepository.delete(users);
+
+        return true;
     }
 
     @Override
-    public void logout() {
-        redisTemplate.delete("refreshToken:" + getEmail());
+    public boolean logout() {
+        return Boolean.TRUE.equals(
+                redisTemplate.delete("refreshToken:" + getEmail()));
     }
 
     private String getEmail() {

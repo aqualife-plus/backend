@@ -1,6 +1,6 @@
 package com.aqualifeplus.aqualifeplus.controller;
 
-import com.aqualifeplus.aqualifeplus.dto.LoginDto;
+import com.aqualifeplus.aqualifeplus.dto.LoginRequestDto;
 import com.aqualifeplus.aqualifeplus.dto.PasswordChangeDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersResponseDto;
@@ -38,9 +38,14 @@ public class UsersController {
         return ResponseEntity.ok(usersService.signUp(usersRequestDto));
     }
 
+    @PostMapping("/check-email")
+    public ResponseEntity<?> checkEmail(String email) {
+        return ResponseEntity.ok(usersService.checkEmail(email));
+    }
+
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginDto loginDto) {
-        return ResponseEntity.ok(usersService.login(loginDto));
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDto loginRequestDto) {
+        return ResponseEntity.ok(usersService.login(loginRequestDto));
     }
 
     @PostMapping("/refresh-token")
@@ -66,14 +71,11 @@ public class UsersController {
 
     @DeleteMapping("/withdrawal")
     public ResponseEntity<?> withdrawal() {
-        usersService.deleteUser();
-
-        return ResponseEntity.ok("ok");
+        return ResponseEntity.ok(usersService.deleteUser());
     }
 
     @PostMapping("/logout")
-    public String logout() {
-        usersService.logout();
-        return "Logged out successfully";
+    public ResponseEntity<?> logout() {
+        return ResponseEntity.ok(usersService.logout());
     }
 }

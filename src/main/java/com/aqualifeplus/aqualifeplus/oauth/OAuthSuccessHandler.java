@@ -1,7 +1,7 @@
 package com.aqualifeplus.aqualifeplus.oauth;
 
-import com.aqualifeplus.aqualifeplus.dto.LoginDto;
-import com.aqualifeplus.aqualifeplus.dto.TokenDto;
+import com.aqualifeplus.aqualifeplus.dto.LoginRequestDto;
+import com.aqualifeplus.aqualifeplus.dto.TokenResponseDto;
 import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
 import com.aqualifeplus.aqualifeplus.repository.UsersRepository;
 import com.aqualifeplus.aqualifeplus.entity.CustomOAuthUsers;
@@ -25,7 +25,7 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
         CustomOAuthUsers customOAuthUsers = (CustomOAuthUsers) authentication.getPrincipal();
-        LoginDto loginDto = new LoginDto(
+        LoginRequestDto loginRequestDto = new LoginRequestDto(
                 customOAuthUsers.getEmail(),
                 customOAuthUsers.getPassword());
 
@@ -43,15 +43,15 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
                             .build());
         }
 
-        TokenDto tokenDto = usersService.login(loginDto);
+        TokenResponseDto tokenResponseDto = usersService.login(loginRequestDto);
 
         // 성공 후 json으로 return
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         response.getWriter()
-                .write("{\"accessToken\":\"" + tokenDto.getAccessToken() + "\"}" +
-                        "{\"userToken\":\"" + tokenDto.getUserToken() + "\"}" +
-                        "{\"refreshToken\":\"" + tokenDto.getRefreshToken() + "\"}");
+                .write("{\"accessToken\":\"" + tokenResponseDto.getAccessToken() + "\"}" +
+                        "{\"userToken\":\"" + tokenResponseDto.getUserToken() + "\"}" +
+                        "{\"refreshToken\":\"" + tokenResponseDto.getRefreshToken() + "\"}");
 
     }
 }

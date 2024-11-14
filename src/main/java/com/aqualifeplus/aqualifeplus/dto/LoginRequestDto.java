@@ -7,7 +7,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class LoginDto {
+public class LoginRequestDto {
     @Email(message = "Please enter it in email format")
     @NotEmpty(message = "Please enter email")
     private String email;
