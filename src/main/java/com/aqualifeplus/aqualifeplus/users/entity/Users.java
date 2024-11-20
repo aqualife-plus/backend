@@ -59,3 +59,4 @@ public class Users {
         this.subscriptionDate = LocalDateTime.now();
     }
 }
+

@@ -9,33 +9,33 @@ import com.google.firebase.database.FirebaseDatabase;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 public class FirebaseRealTimeService {
-
-    private DatabaseReference database;
     private final ChatHandler webSocketHandler;
 
     @Autowired
     public FirebaseRealTimeService(@Lazy ChatHandler webSocketHandler) {
         this.webSocketHandler = webSocketHandler;
-        database = FirebaseDatabase.getInstance().getReference();
+        DatabaseReference database = FirebaseDatabase.getInstance().getReference();
 
         // Firebase에 데이터 변경 시 리스너 추가
         database.addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot snapshot, String previousChildName) {
-                System.out.println("add");
+                log.info("add");
 //                traverseDataSnapshot(snapshot, new StringBuilder());
                 traverseData(snapshot);
             }
 
             @Override
             public void onChildChanged(DataSnapshot snapshot, String previousChildName) {
-                System.out.println("change");
+                log.info("change");
 //                traverseDataSnapshot(snapshot, new StringBuilder());
                 traverseData(snapshot);
             }
@@ -59,14 +59,11 @@ public class FirebaseRealTimeService {
 
     private void traverseData(DataSnapshot snapshot) {
         Map<String, Object> allData = traverseDataSnapshot(snapshot); // 모든 데이터를 수집
-        System.out.println("Collected data: " + allData);
-
-        System.out.println(allData);
-        System.out.println(allData.keySet().stream().toList().get(0));
+        log.info("Collected data: {}", allData);
+        log.info(allData.keySet().stream().toList().getFirst());
 
         try {
-            webSocketHandler.broadcastMessageToClients(allData,
-                    allData.keySet().stream().toList().get(0).split(" ")[0]);
+            webSocketHandler.broadcastMessageToClients(allData);
         } catch (Exception e) {
             throw new RuntimeException();
         }

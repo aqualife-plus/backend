@@ -8,12 +8,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+@Slf4j
 @NoLogging
 @Component
 @RequiredArgsConstructor
@@ -45,7 +47,7 @@ public class ChatHandler extends TextWebSocketHandler {
             // 메시지를 RabbitMQ 큐로 전송
             messageQueueService.sendMessageToQueue(map.get(session) + " : " + formattedMessage);
         } catch (Exception e) {
-            System.err.println("Failed to parse JSON: " + e.getMessage());
+            log.info("Failed to parse JSON: " + e.getMessage());
             session.sendMessage(new TextMessage("Invalid JSON format"));
         }
     }
@@ -56,7 +58,7 @@ public class ChatHandler extends TextWebSocketHandler {
     }
 
     // Firebase에서 받은 메시지를 모든 WebSocket 클라이언트에 브로드캐스트
-    public void broadcastMessageToClients(Map<String, Object> allData, String dir) throws IOException {
+    public void broadcastMessageToClients(Map<String, Object> allData) throws IOException {
         for (WebSocketSession session : sessions) {
             String sessionPath = map.get(session);
             if (sessionPath != null && sessionPath.equals("/ws/" + allData.get("keys"))) {
