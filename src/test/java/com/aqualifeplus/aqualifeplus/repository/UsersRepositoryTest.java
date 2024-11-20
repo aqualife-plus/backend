@@ -2,8 +2,9 @@ package com.aqualifeplus.aqualifeplus.repository;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
-import com.aqualifeplus.aqualifeplus.entity.Users;
+import com.aqualifeplus.aqualifeplus.users.dto.UsersRequestDto;
+import com.aqualifeplus.aqualifeplus.users.entity.Users;
+import com.aqualifeplus.aqualifeplus.users.repository.UsersRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;

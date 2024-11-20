@@ -39,3 +39,4 @@ out/
 ### 설정파일 ###
 *.yml
 *.properties
+*.json

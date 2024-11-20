@@ -1,15 +1,14 @@
 package com.aqualifeplus.aqualifeplus.service;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
-import com.aqualifeplus.aqualifeplus.entity.Users;
-import com.aqualifeplus.aqualifeplus.jwt.JwtService;
-import com.aqualifeplus.aqualifeplus.repository.UsersRepository;
+import com.aqualifeplus.aqualifeplus.users.dto.UsersRequestDto;
+import com.aqualifeplus.aqualifeplus.users.entity.Users;
+import com.aqualifeplus.aqualifeplus.auth.jwt.JwtService;
+import com.aqualifeplus.aqualifeplus.users.repository.UsersRepository;
+import com.aqualifeplus.aqualifeplus.users.service.UsersServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

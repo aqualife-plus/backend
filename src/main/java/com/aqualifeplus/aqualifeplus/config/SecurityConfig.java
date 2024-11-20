@@ -1,9 +1,9 @@
 package com.aqualifeplus.aqualifeplus.config;
 
-import com.aqualifeplus.aqualifeplus.jwt.JwtAuthenticationFilter;
-import com.aqualifeplus.aqualifeplus.jwt.JwtService;
-import com.aqualifeplus.aqualifeplus.oauth.CustomOAuthUserService;
-import com.aqualifeplus.aqualifeplus.oauth.OAuthSuccessHandler;
+import com.aqualifeplus.aqualifeplus.auth.jwt.JwtAuthenticationFilter;
+import com.aqualifeplus.aqualifeplus.auth.jwt.JwtService;
+import com.aqualifeplus.aqualifeplus.auth.oauth.CustomOAuthUserService;
+import com.aqualifeplus.aqualifeplus.auth.oauth.OAuthSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,10 +30,10 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests((requests) -> requests
                         .requestMatchers(
-                                "/users/login",
+                                "/auth/login",
                                 "/users/signup",
-                                "/users/google/login",
-                                "/users/naver/login",
+                                "/auth/google/login",
+                                "/auth/naver/login",
                                 "/users/check-email").permitAll()
                         .anyRequest().authenticated()
                 )

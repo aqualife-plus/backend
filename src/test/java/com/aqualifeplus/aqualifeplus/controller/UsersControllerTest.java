@@ -11,18 +11,21 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.aqualifeplus.aqualifeplus.auth.controller.AuthController;
+import com.aqualifeplus.aqualifeplus.auth.service.AuthService;
 import com.aqualifeplus.aqualifeplus.config.SecurityConfig;
-import com.aqualifeplus.aqualifeplus.dto.LoginRequestDto;
-import com.aqualifeplus.aqualifeplus.dto.SignUpDto;
-import com.aqualifeplus.aqualifeplus.dto.TokenResponseDto;
-import com.aqualifeplus.aqualifeplus.dto.UsersRequestDto;
-import com.aqualifeplus.aqualifeplus.dto.UsersResponseDto;
-import com.aqualifeplus.aqualifeplus.exception.CustomException;
-import com.aqualifeplus.aqualifeplus.exception.ErrorCode;
-import com.aqualifeplus.aqualifeplus.jwt.JwtService;
-import com.aqualifeplus.aqualifeplus.oauth.CustomOAuthUserService;
-import com.aqualifeplus.aqualifeplus.oauth.OAuthSuccessHandler;
-import com.aqualifeplus.aqualifeplus.service.UsersService;
+import com.aqualifeplus.aqualifeplus.auth.dto.LoginRequestDto;
+import com.aqualifeplus.aqualifeplus.users.dto.SignupResponseDto;
+import com.aqualifeplus.aqualifeplus.auth.dto.TokenResponseDto;
+import com.aqualifeplus.aqualifeplus.users.dto.UsersRequestDto;
+import com.aqualifeplus.aqualifeplus.users.dto.UsersResponseDto;
+import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
+import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
+import com.aqualifeplus.aqualifeplus.auth.jwt.JwtService;
+import com.aqualifeplus.aqualifeplus.auth.oauth.CustomOAuthUserService;
+import com.aqualifeplus.aqualifeplus.auth.oauth.OAuthSuccessHandler;
+import com.aqualifeplus.aqualifeplus.users.service.UsersService;
+import com.aqualifeplus.aqualifeplus.users.controller.UsersController;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,7 +44,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
 @Import(SecurityConfig.class)
-@WebMvcTest(UsersController.class)
+@WebMvcTest({UsersController.class, AuthController.class})
 class UsersControllerTest {
     @BeforeEach
     void setup() {
@@ -55,6 +58,8 @@ class UsersControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @MockBean
+    private AuthService authService;
     @MockBean
     private UsersService usersService;
     @MockBean
@@ -75,10 +80,10 @@ class UsersControllerTest {
                         .nickname("test nickname")
                         .phoneNumber(null)
                         .build();
-        SignUpDto signUpDto =
-                new SignUpDto(true, usersRequestDto.getEmail());
+        SignupResponseDto signUpResponseDto =
+                new SignupResponseDto(true, usersRequestDto.getEmail());
         // when
-        when(usersService.signUp(any(UsersRequestDto.class))).thenReturn(signUpDto);
+        when(usersService.signUp(any(UsersRequestDto.class))).thenReturn(signUpResponseDto);
         // then
         String responseValue = mockMvc.perform(post("/users/signup")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -89,7 +94,7 @@ class UsersControllerTest {
                 .getResponse().getContentAsString();
 
         assertEquals(
-                objectMapper.writeValueAsString(signUpDto),
+                objectMapper.writeValueAsString(signUpResponseDto),
                 responseValue);
     }
 
@@ -126,7 +131,7 @@ class UsersControllerTest {
         // given
         String email = "t@t.com";
         // when
-        when(usersService.checkEmail(email)).thenReturn(true);
+        when(usersService.checkEmail(email)).thenReturn(false);
         // then
         String responseValue = mockMvc.perform(post("/users/check-email")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -145,7 +150,7 @@ class UsersControllerTest {
         // given
         String email = "t@t.com";
         // when
-        when(usersService.checkEmail(email)).thenReturn(false);
+        when(usersService.checkEmail(email)).thenReturn(true);
         // then
         String responseValue = mockMvc.perform(post("/users/check-email")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -155,7 +160,7 @@ class UsersControllerTest {
                 .andReturn()
                 .getResponse().getContentAsString();
 
-        assertEquals("false", responseValue);
+        assertEquals("true", responseValue);
     }
 
     @Test
@@ -191,9 +196,9 @@ class UsersControllerTest {
                         "userTokenValue",
                         "refreshTokenValue");
         //when
-        when(usersService.login(any(LoginRequestDto.class))).thenReturn(tokenDto);
+        when(authService.login(any(LoginRequestDto.class))).thenReturn(tokenDto);
         //then
-        String responseValue = mockMvc.perform(post("/users/login")
+        String responseValue = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequestDto)))
                 .andExpect(status().isOk()) // 예외 시 예상되는 상태 코드 설정
@@ -217,13 +222,19 @@ class UsersControllerTest {
         LoginRequestDto loginDto =
                 new LoginRequestDto("1@1.com", "testPassword");
         //when
-        when(usersService.login(any(LoginRequestDto.class)))
+        when(authService.login(any(LoginRequestDto.class)))
                 .thenThrow(new CustomException(ErrorCode.NOT_MATCH_PASSWORD_OR_EMAIL));
         //then
-        mockMvc.perform(post("/users/login")
+        mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginDto)))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class, result.getResolvedException()))
+                .andExpect(result -> assertEquals(
+                        "이메일 or 비밀번호가 맞지 않습니다.",
+                        result.getResolvedException().getMessage()))
+                .andDo(print());
     }
 
     @Test
@@ -233,10 +244,10 @@ class UsersControllerTest {
         LoginRequestDto loginRequestDto =
                 new LoginRequestDto("1@1.com", "testPassword");
         //when
-        when(usersService.login(any(LoginRequestDto.class)))
+        when(authService.login(any(LoginRequestDto.class)))
                 .thenThrow(new CustomException(ErrorCode.NOT_FOUND_MEMBER));
         //then
-        mockMvc.perform(post("/users/login")
+        mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequestDto)))
                 .andExpect(status().isNotFound())
@@ -256,9 +267,9 @@ class UsersControllerTest {
         String refreshTokenExample = "Bearer refreshTokenExample";
         String newAccessTokenExample = "Bearer newAccessTokenExample";
         //when
-        when(usersService.refreshAccessToken()).thenReturn(newAccessTokenExample);
+        when(authService.refreshAccessToken()).thenReturn(newAccessTokenExample);
         //then
-        String responseValue = mockMvc.perform(post("/users/refresh-token")
+        String responseValue = mockMvc.perform(post("/auth/refresh-token")
                         .header("Authorization", refreshTokenExample) // 헤더에 refreshToken 추가
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -276,10 +287,10 @@ class UsersControllerTest {
         //given
         String refreshTokenExample = "Bearer refreshTokenExample";
         //when
-        when(usersService.refreshAccessToken())
+        when(authService.refreshAccessToken())
                 .thenThrow(new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
         //then
-        mockMvc.perform(post("/users/refresh-token")
+        mockMvc.perform(post("/auth/refresh-token")
                         .header("Authorization", refreshTokenExample)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized())
@@ -375,6 +386,7 @@ class UsersControllerTest {
                 .phoneNumber("01011112222")
                 .build();
         //when
+        when(usersService.updateMyInfo(any(UsersResponseDto.class))).thenReturn(true);
         //then
         String responseValue = mockMvc.perform(put("/users/my-info")
                         .header("Authorization", accessTokenExample)
