@@ -99,4 +99,11 @@ public class UsersServiceImpl implements UsersService{
         return Boolean.TRUE.equals(
                 redisTemplate.delete("refreshToken:" + jwtService.getEmail()));
     }
+
+    @Override
+    public Long getId(String email) {
+        return usersRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER))
+                .getUserId();
+    }
 }

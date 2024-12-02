@@ -24,6 +24,7 @@ public class FishbowlsDTO {
         TempDTO tempDTO  = TempDTO.startTempData();
 
         FishbowlDTO fishbowlDTO = FishbowlDTO.builder()
+                .name("이름을 정해주세요!")
                 .now(nowDTO)
                 .filter(filterDTO)
                 .co2(List.of(co2DTO))

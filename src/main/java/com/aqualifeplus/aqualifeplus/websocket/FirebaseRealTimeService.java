@@ -6,7 +6,6 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -29,14 +28,12 @@ public class FirebaseRealTimeService {
             @Override
             public void onChildAdded(DataSnapshot snapshot, String previousChildName) {
                 log.info("add");
-//                traverseDataSnapshot(snapshot, new StringBuilder());
                 traverseData(snapshot);
             }
 
             @Override
             public void onChildChanged(DataSnapshot snapshot, String previousChildName) {
                 log.info("change");
-//                traverseDataSnapshot(snapshot, new StringBuilder());
                 traverseData(snapshot);
             }
 
@@ -63,7 +60,7 @@ public class FirebaseRealTimeService {
         log.info(allData.keySet().stream().toList().getFirst());
 
         try {
-            webSocketHandler.broadcastMessageToClients(allData);
+            webSocketHandler.messageToClients(allData);
         } catch (Exception e) {
             throw new RuntimeException();
         }

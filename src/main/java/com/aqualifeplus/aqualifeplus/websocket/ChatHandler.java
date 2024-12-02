@@ -22,12 +22,20 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 public class ChatHandler extends TextWebSocketHandler {
     private final MessageQueueService messageQueueService;
     private final Set<WebSocketSession> sessions = new HashSet<>();
-    private final Map<WebSocketSession, String> map = new HashMap<>();
+    private final Map<WebSocketSession, Long> map = new HashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessions.add(session);
-        map.put(session, session.getUri().getPath());
+
+        Long userId = (Long) session.getAttributes().get("userId");
+        if (userId != null) {
+            map.put(session, userId);
+            System.out.println("Session established for userId : " + userId);
+        } else {
+            session.close();
+            System.err.println("Email not found in session attributes.");
+        }
     }
 
     @Override
@@ -57,11 +65,11 @@ public class ChatHandler extends TextWebSocketHandler {
         sessions.remove(session);
     }
 
-    // Firebase에서 받은 메시지를 모든 WebSocket 클라이언트에 브로드캐스트
-    public void broadcastMessageToClients(Map<String, Object> allData) throws IOException {
+    public void messageToClients(Map<String, Object> allData) throws IOException {
         for (WebSocketSession session : sessions) {
-            String sessionPath = map.get(session);
-            if (sessionPath != null && sessionPath.equals("/ws/" + allData.get("keys"))) {
+            String sessionUserId = String.valueOf(map.get(session));
+            log.info("session check : " + (sessionUserId != null && sessionUserId.equals(allData.get("keys"))));
+            if (sessionUserId != null && sessionUserId.equals(allData.get("keys"))) {
                 session.sendMessage(new TextMessage(convertMapToJson(allData)));
             }
         }

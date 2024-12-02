@@ -13,4 +13,5 @@ public interface UsersService {
     boolean changePassword(PasswordChangeDto passwordUpdateRequestDto);
     boolean deleteUser();
     boolean logout();
+    Long getId(String email);
 }
