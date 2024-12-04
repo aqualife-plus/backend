@@ -54,7 +54,6 @@ public class OAuthSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
         response.setCharacterEncoding("UTF-8");
         response.getWriter()
                 .write("{\"accessToken\":\"" + tokenResponseDto.getAccessToken() + "\"}" +
-                        "{\"userToken\":\"" + tokenResponseDto.getUserToken() + "\"}" +
                         "{\"refreshToken\":\"" + tokenResponseDto.getRefreshToken() + "\"}");
 
     }

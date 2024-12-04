@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ConnectDto {
-    private boolean success;
-    private String fishbowlId;
+public class FishbowlNameDto {
+    String name;
 }

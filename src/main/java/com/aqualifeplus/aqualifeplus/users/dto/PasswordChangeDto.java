@@ -1,6 +1,5 @@
 package com.aqualifeplus.aqualifeplus.users.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Getter;
 

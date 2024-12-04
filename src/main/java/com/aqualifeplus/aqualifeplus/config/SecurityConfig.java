@@ -31,9 +31,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests((requests) -> requests
                         .requestMatchers(
                                 "/auth/login",
+                                "/auth/refresh-token",
                                 "/users/signup",
-                                "/auth/google/login",
-                                "/auth/naver/login",
+                                "/auth/google/login", "/oauth2/authorization/google/**",
+                                "/auth/naver/login", "/oauth2/authorization/naver/**",
                                 "/users/check-email").permitAll()
                         .anyRequest().authenticated()
                 )

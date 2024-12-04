@@ -1,7 +1,9 @@
 package com.aqualifeplus.aqualifeplus.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -15,8 +17,10 @@ import com.aqualifeplus.aqualifeplus.auth.controller.AuthController;
 import com.aqualifeplus.aqualifeplus.auth.service.AuthService;
 import com.aqualifeplus.aqualifeplus.config.SecurityConfig;
 import com.aqualifeplus.aqualifeplus.auth.dto.LoginRequestDto;
+import com.aqualifeplus.aqualifeplus.users.dto.SignupCheckDto;
 import com.aqualifeplus.aqualifeplus.users.dto.SignupResponseDto;
 import com.aqualifeplus.aqualifeplus.auth.dto.TokenResponseDto;
+import com.aqualifeplus.aqualifeplus.users.dto.SuccessDto;
 import com.aqualifeplus.aqualifeplus.users.dto.UsersRequestDto;
 import com.aqualifeplus.aqualifeplus.users.dto.UsersResponseDto;
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
@@ -129,52 +133,68 @@ class UsersControllerTest {
     @DisplayName("이메일 중복체크 성공")
     void successCheckEmail() throws Exception {
         // given
-        String email = "t@t.com";
+        SignupCheckDto signupCheckDto = SignupCheckDto.builder()
+                .email("t@t.com")
+                .build();
+        SuccessDto successDto = SuccessDto.builder()
+                .success(false)
+                .build();
         // when
-        when(usersService.checkEmail(email)).thenReturn(false);
+        when(usersService.checkEmail(signupCheckDto)).thenReturn(successDto);
         // then
         String responseValue = mockMvc.perform(post("/users/check-email")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(email)))
+                        .content(objectMapper.writeValueAsString(signupCheckDto)))
                 .andExpect(status().isOk())
                 .andDo(print())
                 .andReturn()
                 .getResponse().getContentAsString();
 
-        assertEquals("false", responseValue);
+        SuccessDto returnDto = objectMapper.readValue(responseValue, SuccessDto.class);
+
+        assertFalse(returnDto.isSuccess());
     }
 
     @Test
     @DisplayName("이메일 중복체크 실패 -> 이메일 이미 존재")
     void failCheckEmail_alreadyExistEmail() throws Exception {
         // given
-        String email = "t@t.com";
+        SignupCheckDto signupCheckDto = SignupCheckDto.builder()
+                .email("t@t.com")
+                .build();
+        SuccessDto successDto = SuccessDto.builder()
+                .success(true)
+                .build();
         // when
-        when(usersService.checkEmail(email)).thenReturn(true);
+        when(usersService.checkEmail(signupCheckDto)).thenReturn(successDto);
         // then
         String responseValue = mockMvc.perform(post("/users/check-email")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(email)))
+                        .content(objectMapper.writeValueAsString(signupCheckDto)))
                 .andExpect(status().isOk())
                 .andDo(print())
                 .andReturn()
                 .getResponse().getContentAsString();
 
-        assertEquals("true", responseValue);
+        SuccessDto returnDto = objectMapper.readValue(responseValue, SuccessDto.class);
+
+        assertTrue(returnDto.isSuccess());
     }
 
     @Test
     @DisplayName("이메일 중복체크 실패 -> 이메일이 아니거나 값이 X")
     void failCheckEmail_NullOrNotMatchEmailFormat() throws Exception {
         // given
-        String email = "t@t.com";
+        SignupCheckDto signupCheckDto = SignupCheckDto.builder()
+                .email(null)
+                .build();
         // when
-        when(usersService.checkEmail(email))
+        when(usersService.checkEmail(signupCheckDto))
                 .thenThrow(new CustomException(ErrorCode.NULL_AND_NOT_FORMAT_EMAIL));
         // then
         mockMvc.perform(post("/users/check-email")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(email)))
+                        .content(objectMapper.writeValueAsString(signupCheckDto)))
                 .andExpect(status().isBadRequest())
                 .andExpect(result -> assertInstanceOf(
                         CustomException.class, result.getResolvedException()))
@@ -193,7 +213,6 @@ class UsersControllerTest {
         TokenResponseDto tokenDto =
                 new TokenResponseDto(
                         "accessTokenValue",
-                        "userTokenValue",
                         "refreshTokenValue");
         //when
         when(authService.login(any(LoginRequestDto.class))).thenReturn(tokenDto);
@@ -385,8 +404,11 @@ class UsersControllerTest {
                 .nickname("update nick")
                 .phoneNumber("01011112222")
                 .build();
+        SuccessDto successDto = SuccessDto.builder()
+                .success(true)
+                .build();
         //when
-        when(usersService.updateMyInfo(any(UsersResponseDto.class))).thenReturn(true);
+        when(usersService.updateMyInfo(any(UsersResponseDto.class))).thenReturn(successDto);
         //then
         String responseValue = mockMvc.perform(put("/users/my-info")
                         .header("Authorization", accessTokenExample)
@@ -397,7 +419,9 @@ class UsersControllerTest {
                 .andReturn()
                 .getResponse().getContentAsString();
 
-        assertEquals("true", responseValue);
+        SuccessDto returnDto = objectMapper.readValue(responseValue, SuccessDto.class);
+
+        assertTrue(returnDto.isSuccess());
     }
 
     @Test
@@ -428,19 +452,24 @@ class UsersControllerTest {
     void successDeleteUsers() throws Exception {
         //given
         String accessTokenExample = "Bearer accessTokenExample";
+        SuccessDto successDto = SuccessDto.builder()
+                .success(true)
+                .build();
         //when
-        when(usersService.deleteUser()).thenReturn(true);
+        when(usersService.deleteUser()).thenReturn(successDto);
         //then
         String responseValue = mockMvc.perform(delete("/users/withdrawal")
                         .header("Authorization", accessTokenExample)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString("ok")))
+                        .content(objectMapper.writeValueAsString(successDto)))
                 .andExpect(status().isOk())
                 .andDo(print())
                 .andReturn()
                 .getResponse().getContentAsString();
 
-        assertEquals("true", responseValue);
+        SuccessDto returnDto = objectMapper.readValue(responseValue, SuccessDto.class);
+
+        assertTrue(returnDto.isSuccess());
     }
 
     @Test
@@ -449,18 +478,23 @@ class UsersControllerTest {
     void successLogout() throws Exception {
         //given
         String accessTokenExample = "Bearer accessTokenExample";
+        SuccessDto successDto = SuccessDto.builder()
+                .success(true)
+                .build();
         //when
-        when(usersService.logout()).thenReturn(true);
+        when(usersService.logout()).thenReturn(successDto);
         //then
         String responseValue = mockMvc.perform(post("/users/logout")
                         .header("Authorization", accessTokenExample)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString("logout")))
+                        .content(objectMapper.writeValueAsString(successDto)))
                 .andExpect(status().isOk())
                 .andDo(print())
                 .andReturn()
                 .getResponse().getContentAsString();
 
-        assertEquals("true", responseValue);
+        SuccessDto returnDto = objectMapper.readValue(responseValue, SuccessDto.class);
+
+        assertTrue(returnDto.isSuccess());
     }
 }

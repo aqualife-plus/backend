@@ -16,7 +16,10 @@ public enum ErrorCode {
 
     NOT_MATCH_UUID_FORMAT("UUID 형식이 아닙니다.", HttpStatus.BAD_REQUEST),
 
-    FAIL_UPDATE_NAME("어항의 이름을 수정하지 못했습니다.", HttpStatus.BAD_REQUEST);
+    FAIL_UPDATE_NAME("어항의 이름을 수정하지 못했습니다.", HttpStatus.BAD_REQUEST),
+    NOT_FOUND_NEW_FISHBOWL_ID_USE_THIS_USER_ID("해당 유저가 만든 어항이 존재하지 않습니다.", HttpStatus.NOT_FOUND),
+
+    NOT_MATCH_NUMBER_FORMAT("숫자 형식이 아닙니다.", HttpStatus.BAD_REQUEST);
 
     private final String message;
     private final HttpStatus status;

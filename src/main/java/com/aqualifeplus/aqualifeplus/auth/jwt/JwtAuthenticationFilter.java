@@ -25,9 +25,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final List<String> excludedPaths =
             Arrays.asList(
                     "/auth/login",
+                    "/auth/refresh-token",
                     "/users/signup",
-                    "/auth/google/login",
-                    "/auth/naver/login",
+                    "/auth/google/login", "/oauth2/authorization/google/**",
+                    "/auth/naver/login", "/oauth2/authorization/naver/**",
                     "/users/check-email");
 
     @Override

@@ -62,8 +62,8 @@ public class MessageQueueService {
             if (matcher.find()) {
                 String type = matcher.group(1); // "업데이트"
                 String messages = matcher.group(2); // "ㄱㄱ"
-                firebaseSaveService.saveData(channel, type, messages);
-                System.out.println("Data saved to Firebase successfully.");
+//                firebaseSaveService.saveData(channel, type, messages);
+                System.out.println("Data saved to Firebase successfully.(구현x)");
             }
         } catch (Exception e) {
             System.err.println("Error processing message: " + e.getMessage());

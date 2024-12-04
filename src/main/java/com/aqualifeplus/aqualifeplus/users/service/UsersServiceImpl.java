@@ -4,7 +4,9 @@ import com.aqualifeplus.aqualifeplus.auth.jwt.JwtService;
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
 import com.aqualifeplus.aqualifeplus.users.dto.PasswordChangeDto;
+import com.aqualifeplus.aqualifeplus.users.dto.SignupCheckDto;
 import com.aqualifeplus.aqualifeplus.users.dto.SignupResponseDto;
+import com.aqualifeplus.aqualifeplus.users.dto.SuccessDto;
 import com.aqualifeplus.aqualifeplus.users.dto.UsersRequestDto;
 import com.aqualifeplus.aqualifeplus.users.dto.UsersResponseDto;
 import com.aqualifeplus.aqualifeplus.users.entity.Users;
@@ -41,13 +43,14 @@ public class UsersServiceImpl implements UsersService{
     }
 
     @Override
-    public boolean checkEmail(String email) {
+    public SuccessDto checkEmail(SignupCheckDto signupCheckDto) {
+        String email = signupCheckDto.getEmail();
         String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
         if (email == null || !Pattern.matches(emailRegex, email)) {
             throw new CustomException(ErrorCode.NULL_AND_NOT_FORMAT_EMAIL);
         }
 
-        return !usersRepository.existsByEmail(email);
+        return getSuccessDto(!usersRepository.existsByEmail(email));
     }
 
     @Override
@@ -59,18 +62,18 @@ public class UsersServiceImpl implements UsersService{
 
     @Override
     @Transactional
-    public boolean updateMyInfo(UsersResponseDto usersResponseDto) {
+    public SuccessDto updateMyInfo(UsersResponseDto usersResponseDto) {
         Users users =  usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
         users.setUpdateData(usersResponseDto);
 
-        return true;
+        return getSuccessDto(true);
     }
 
     @Override
     @Transactional
-    public boolean changePassword(PasswordChangeDto passwordUpdateRequestDto) {
+    public SuccessDto changePassword(PasswordChangeDto passwordUpdateRequestDto) {
         Users users =  usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
@@ -78,26 +81,34 @@ public class UsersServiceImpl implements UsersService{
                 passwordUpdateRequestDto.getOldPassword(), users.getPassword())) {
             users.setPassword(
                     passwordEncoder.encode(passwordUpdateRequestDto.getChangePassword()));
-            return true;
+            return getSuccessDto(true);
         }
 
-        return false;
+        return getSuccessDto(false);
+    }
+
+    private SuccessDto getSuccessDto(boolean success) {
+        return SuccessDto.builder()
+                .success(success)
+                .build();
     }
 
     @Override
-    public boolean deleteUser() {
+    public SuccessDto deleteUser() {
         Users users =  usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
         usersRepository.delete(users);
 
-        return true;
+        return getSuccessDto(true);
     }
 
     @Override
-    public boolean logout() {
-        return Boolean.TRUE.equals(
+    public SuccessDto logout() {
+        boolean booleanValue = Boolean.TRUE.equals(
                 redisTemplate.delete("refreshToken:" + jwtService.getEmail()));
+
+        return getSuccessDto(booleanValue);
     }
 
     @Override

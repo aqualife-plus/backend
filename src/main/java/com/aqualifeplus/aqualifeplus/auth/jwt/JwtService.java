@@ -27,18 +27,11 @@ public class JwtService {
     @Value("${jwt.accessTokenExpirationMs}")
     private long accessTokenExpirationMs;
     @Getter
-    @Value("${jwt.userTokenExpirationMs}")
-    private long userTokenExpirationMs;
-    @Getter
     @Value("${jwt.refreshTokenExpirationMs}")
     private long refreshTokenExpirationMs;
 
     public String makeAccessToken(String username) {
         return getJwtToken(username, accessTokenExpirationMs);
-    }
-
-    public String makeUserToken(String username) {
-        return getJwtToken(username, userTokenExpirationMs);
     }
 
     public String makeRefreshToken(String username) {
@@ -58,6 +51,10 @@ public class JwtService {
     public String getAuthorization() {
         return request.getHeader("Authorization").substring(7);
     }
+    public String getFishbowlToken() {
+        return request.getHeader("X-Fishbowl-Token");
+    }
+
     public String getEmail() {return extractEmail(getAuthorization());}
 
     public String extractEmail(String token) {

@@ -33,7 +33,6 @@ public class AuthServiceImpl implements AuthService{
         if (passwordEncoder.matches(loginRequestDto.getPassword(), users.getPassword())) {
             TokenResponseDto rt = new TokenResponseDto(
                     jwtService.makeAccessToken(email),
-                    jwtService.makeUserToken(email),
                     jwtService.makeRefreshToken(email));
 
             redisTemplate.opsForValue().set(
@@ -51,10 +50,10 @@ public class AuthServiceImpl implements AuthService{
     public String refreshAccessToken() {
         String authData = jwtService.getAuthorization();
         String email = jwtService.extractEmail(authData);
-        String storedRefreshToken
-                = redisTemplate.opsForValue().get("refreshToken:" + email);
+        String storedRefreshToken =
+                redisTemplate.opsForValue().get("refreshToken:" + email);
         if (storedRefreshToken != null && storedRefreshToken.equals(authData)) {
-            return jwtService.makeAccessToken(email);
+            return "Bearer " + jwtService.makeAccessToken(email);
         } else {
             throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
         }

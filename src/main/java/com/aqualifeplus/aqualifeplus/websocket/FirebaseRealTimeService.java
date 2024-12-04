@@ -1,13 +1,16 @@
 package com.aqualifeplus.aqualifeplus.websocket;
 
-
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.GenericTypeIndicator;
+import com.google.firebase.database.ValueEventListener;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -39,7 +42,7 @@ public class FirebaseRealTimeService {
 
             @Override
             public void onChildRemoved(DataSnapshot snapshot) {
-                // 필요한 경우 삭제 처리 로직 추가
+                log.info("remove");
             }
 
             @Override
@@ -57,19 +60,20 @@ public class FirebaseRealTimeService {
     private void traverseData(DataSnapshot snapshot) {
         Map<String, Object> allData = traverseDataSnapshot(snapshot); // 모든 데이터를 수집
         log.info("Collected data: {}", allData);
-        log.info(allData.keySet().stream().toList().getFirst());
 
         try {
             webSocketHandler.messageToClients(allData);
-        } catch (Exception e) {
-            throw new RuntimeException();
+        } catch (IOException e) {
+            throw new RuntimeException(e.getMessage());
         }
     }
 
     private Map<String, Object> traverseDataSnapshot(DataSnapshot snapshot) {
         Map<String, Object> allData = new HashMap<>();
+
         allData.put("keys", snapshot.getKey().trim());
         collectAllData(snapshot, "", allData); // 루트 노드부터 탐색 시작
+
         return allData;
     }
 
@@ -81,7 +85,7 @@ public class FirebaseRealTimeService {
                 collectAllData(child, path, allData); // 자식 노드 재귀 탐색
             }
         } else {
-            allData.put(snapshot.getKey(), snapshot.getValue()); // 최종 데이터를 경로와 함께 저장
+            allData.put(currentPath + "/" + snapshot.getKey(), snapshot.getValue()); // 최종 데이터를 경로와 함께 저장
         }
     }
 }
