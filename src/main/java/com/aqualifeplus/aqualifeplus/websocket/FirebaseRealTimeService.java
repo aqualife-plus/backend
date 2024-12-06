@@ -5,12 +5,9 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.GenericTypeIndicator;
-import com.google.firebase.database.ValueEventListener;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -71,7 +68,7 @@ public class FirebaseRealTimeService {
     private Map<String, Object> traverseDataSnapshot(DataSnapshot snapshot) {
         Map<String, Object> allData = new HashMap<>();
 
-        allData.put("keys", snapshot.getKey().trim());
+        allData.put("userId", snapshot.getKey().trim());
         collectAllData(snapshot, "", allData); // 루트 노드부터 탐색 시작
 
         return allData;

@@ -3,7 +3,7 @@ package com.aqualifeplus.aqualifeplus.fishbowl.service;
 import com.aqualifeplus.aqualifeplus.auth.jwt.JwtService;
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
-import com.aqualifeplus.aqualifeplus.fishbowl.dto.firebase.FishbowlDTO;
+import com.aqualifeplus.aqualifeplus.fishbowl.dto.firebase.Fishbowl;
 import com.aqualifeplus.aqualifeplus.fishbowl.dto.local.ConnectDto;
 import com.aqualifeplus.aqualifeplus.users.dto.SuccessDto;
 import com.aqualifeplus.aqualifeplus.users.repository.UsersRepository;
@@ -34,7 +34,7 @@ public class FishbowlServiceImpl implements FishbowlService{
         String fishbowlId = createUUID();
         //firebase에 기본적인 틀 생성
         firebaseSaveService.createFishbowl(
-                userId, fishbowlId, FishbowlDTO.makeFrame());
+                userId, fishbowlId, Fishbowl.makeFrame());
         //그리고 redis에 저장
         redisTemplate.opsForValue().set(
                 "fishbowl id : " + userId,

@@ -2,7 +2,7 @@ package com.aqualifeplus.aqualifeplus.websocket;
 
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
-import com.aqualifeplus.aqualifeplus.fishbowl.dto.firebase.FishbowlDTO;
+import com.aqualifeplus.aqualifeplus.fishbowl.dto.firebase.Fishbowl;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -18,11 +18,11 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class FirebaseSaveService {
-    public void createFishbowl(long userId, String fishbowlId, FishbowlDTO fishbowlDTO) {
+    public void createFishbowl(long userId, String fishbowlId, Fishbowl fishbowl) {
         DatabaseReference userRef =
                 FirebaseDatabase.getInstance().getReference(String.valueOf(userId));
         userRef.child(fishbowlId)
-                .updateChildrenAsync(FishbowlDTO.convertDTOToMap(fishbowlDTO));
+                .updateChildrenAsync(Fishbowl.convertDTOToMap(fishbowl));
     }
 
     public void deleteFishbowlWithName(long userId, String targetName) {
@@ -95,6 +95,27 @@ public class FirebaseSaveService {
         userRef.updateChildren(updates, (error, databaseReference) -> {
             if (error != null) {
                 throw new CustomException(ErrorCode.FAIL_UPDATE_NAME);
+            }
+        });
+    }
+
+    public void updateOnOff(String userId, String fishbowlId, String type, boolean onOff) {
+        if (!(type.equals("co2State") || type.equals("lightState"))) {
+            throw new CustomException(ErrorCode.NOT_MATCH_UPDATE_COLUMN);
+        }
+
+        DatabaseReference userRef =
+                FirebaseDatabase.getInstance()
+                        .getReference(userId)
+                        .child(fishbowlId)
+                        .child("now")
+                        .child(type);
+
+        userRef.setValue(onOff, (error, databaseReference) -> {
+            if (error != null && type.equals("co2State")) {
+                throw new CustomException(ErrorCode.FAIL_UPDATE_NOW_CO2);
+            } else if (error != null){
+                throw new CustomException(ErrorCode.FAIL_UPDATE_NOW_LIGHT);
             }
         });
     }

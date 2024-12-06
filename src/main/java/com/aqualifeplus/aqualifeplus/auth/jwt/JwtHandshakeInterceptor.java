@@ -4,8 +4,7 @@ import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
 import com.aqualifeplus.aqualifeplus.users.service.UsersService;
 import java.util.List;
-import java.util.UUID;
-import lombok.AllArgsConstructor;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.ServerHttpRequest;
@@ -13,12 +12,10 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
-import java.util.Map;
-
 @Slf4j
 @RequiredArgsConstructor
 public class JwtHandshakeInterceptor implements HandshakeInterceptor {
-    private static final String MyFishbowlAll = "MyFishbowlAll";
+//    private static final String MyFishbowlAll = "MyFishbowlAll";
     private final JwtService jwtService;
     private final UsersService usersService;
 
@@ -26,14 +23,14 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                    WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
         List<String> authHeaders = request.getHeaders().get("Authorization");
-        List<String> fishbowlHeaders = request.getHeaders().get("X-Fishbowl-Token");
+//        List<String> fishbowlHeaders = request.getHeaders().get("X-Fishbowl-Token");
         try {
-            if (fishbowlHeaders != null && !fishbowlHeaders.isEmpty()
-                    && !fishbowlHeaders.getFirst().equals(MyFishbowlAll)) {
-                String fishbowlToken = fishbowlHeaders.getFirst();
-                UUID.fromString(fishbowlToken);
-                attributes.put("fishbowlToken", fishbowlToken);
-            }
+//            if (fishbowlHeaders != null && !fishbowlHeaders.isEmpty()
+//                    && !fishbowlHeaders.getFirst().equals(MyFishbowlAll)) {
+//                String fishbowlToken = fishbowlHeaders.getFirst();
+//                UUID.fromString(fishbowlToken);
+//                attributes.put("fishbowlToken", fishbowlToken);
+//            }
 
             if (authHeaders != null && !authHeaders.isEmpty()) {
                 String token = authHeaders.getFirst().replace("Bearer ", "");

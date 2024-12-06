@@ -52,12 +52,12 @@ public class RabbitMQConfig {
 
         // 최대 재시도 횟수 설정 (예: 3회)
         SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy();
-        retryPolicy.setMaxAttempts(3);
+        retryPolicy.setMaxAttempts(1);
         retryTemplate.setRetryPolicy(retryPolicy);
 
         // 재시도 간격 설정 (예: 2초 간격)
         FixedBackOffPolicy backOffPolicy = new FixedBackOffPolicy();
-        backOffPolicy.setBackOffPeriod(2000);  // 2000ms = 2초
+        backOffPolicy.setBackOffPeriod(100);  // 100ms = 0.1초
         retryTemplate.setBackOffPolicy(backOffPolicy);
 
         // RetryInterceptorBuilder로 RetryOperationsInterceptor 생성

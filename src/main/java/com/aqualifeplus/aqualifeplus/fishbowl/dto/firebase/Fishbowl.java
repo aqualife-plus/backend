@@ -3,13 +3,16 @@ package com.aqualifeplus.aqualifeplus.fishbowl.dto.firebase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
-import javax.naming.Name;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
-public class FishbowlDTO {
+public class Fishbowl {
     private String name;
     private NowDTO now;
     private List<Co2DTO> co2; // Array of Co2DTO
@@ -18,7 +21,7 @@ public class FishbowlDTO {
     private TempDTO temp;
     private FilterDTO filter;
 
-    public static FishbowlDTO makeFrame() {
+    public static Fishbowl makeFrame() {
         NowDTO nowDTO = NowDTO.startNowData();
         FilterDTO filterDTO = FilterDTO.startFilterData();
         Co2DTO co2DTO = Co2DTO.startCo2Data();
@@ -26,7 +29,7 @@ public class FishbowlDTO {
         PhDTO phDTO  = PhDTO.startPhData();
         TempDTO tempDTO  = TempDTO.startTempData();
 
-        return FishbowlDTO.builder()
+        return Fishbowl.builder()
                 .name("이름을 정해주세요!")
                 .now(nowDTO)
                 .filter(filterDTO)
@@ -38,7 +41,7 @@ public class FishbowlDTO {
     }
 
 
-    public static Map<String, Object> convertDTOToMap(FishbowlDTO fishbowlDTO) {
-        return new ObjectMapper().convertValue(fishbowlDTO, Map.class);
+    public static Map<String, Object> convertDTOToMap(Fishbowl fishbowl) {
+        return new ObjectMapper().convertValue(fishbowl, Map.class);
     }
 }

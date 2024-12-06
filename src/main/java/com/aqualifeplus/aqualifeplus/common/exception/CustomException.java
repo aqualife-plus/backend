@@ -2,6 +2,7 @@ package com.aqualifeplus.aqualifeplus.common.exception;
 
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 
 @Getter
 public class CustomException  extends RuntimeException{
