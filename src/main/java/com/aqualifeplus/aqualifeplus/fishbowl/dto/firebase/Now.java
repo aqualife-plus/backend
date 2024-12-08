@@ -5,15 +5,15 @@ import lombok.Data;
 
 @Data
 @Builder
-public class NowDTO {
+public class Now {
     private boolean co2State;
     private boolean lightState;
     private double phState;
     private double tempState;
     private int filterState;
 
-    public static NowDTO startNowData() {
-        return NowDTO.builder()
+    public static Now startNowData() {
+        return Now.builder()
                 .co2State(false)
                 .lightState(false)
                 .phState(0.0)

@@ -9,6 +9,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @Service
 public class FirebaseConfig {
@@ -79,6 +80,22 @@ public class FirebaseConfig {
                 clientEmail, clientId, authUri, tokenUri,
                 authProviderCertUrl, clientCertUrl
         ).getBytes();
+    }
+
+    public String getAccessToken() {
+        try {
+            GoogleCredentials credentials = GoogleCredentials.fromStream(new ByteArrayInputStream(getFirebaseToByteArr()))
+                    .createScoped("https://www.googleapis.com/auth/firebase.database", "https://www.googleapis.com/auth/userinfo.email");
+
+            credentials.refreshIfExpired();
+            return credentials.getAccessToken().getTokenValue();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to obtain access token from Firebase credentials", e);
+        }
+    }
+
+    public WebClient webClientCreate() {
+        return WebClient.create(databaseUrl);
     }
 }
 

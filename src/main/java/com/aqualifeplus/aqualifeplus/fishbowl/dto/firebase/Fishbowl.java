@@ -1,8 +1,11 @@
 package com.aqualifeplus.aqualifeplus.fishbowl.dto.firebase;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,34 +17,39 @@ import lombok.NoArgsConstructor;
 @Builder
 public class Fishbowl {
     private String name;
-    private NowDTO now;
-    private List<Co2DTO> co2; // Array of Co2DTO
-    private List<LightDTO> light; // Array of LightDTO
-    private PhDTO ph;
-    private TempDTO temp;
-    private FilterDTO filter;
+    private Now now;
+    private Map<String, Co2> co2; // map of Co2DTO
+    private Map<String, Light> light; // map of LightDTO
+    private Ph ph;
+    private Temp temp;
+    private Filter filter;
 
     public static Fishbowl makeFrame() {
-        NowDTO nowDTO = NowDTO.startNowData();
-        FilterDTO filterDTO = FilterDTO.startFilterData();
-        Co2DTO co2DTO = Co2DTO.startCo2Data();
-        LightDTO lightDTO  = LightDTO.startLightData();
-        PhDTO phDTO  = PhDTO.startPhData();
-        TempDTO tempDTO  = TempDTO.startTempData();
+        Now now = Now.startNowData();
+        Filter filter = Filter.startFilterData();
+        Co2 co2 = com.aqualifeplus.aqualifeplus.fishbowl.dto.firebase.Co2.startCo2Data();
+        Light light  = Light.startLightData();
+        Ph ph  = Ph.startPhData();
+        Temp temp  = Temp.startTempData();
+
+        Map<String, Co2> co2Map = new HashMap<>();
+        co2Map.put(UUID.randomUUID().toString(), co2);
+        Map<String, Light> lightMap = new HashMap<>();
+        lightMap.put(UUID.randomUUID().toString(), light);
 
         return Fishbowl.builder()
                 .name("이름을 정해주세요!")
-                .now(nowDTO)
-                .filter(filterDTO)
-                .co2(List.of(co2DTO))
-                .light(List.of(lightDTO))
-                .ph(phDTO)
-                .temp(tempDTO)
+                .now(now)
+                .filter(filter)
+                .co2(co2Map)
+                .light(lightMap)
+                .ph(ph)
+                .temp(temp)
                 .build();
     }
 
 
     public static Map<String, Object> convertDTOToMap(Fishbowl fishbowl) {
-        return new ObjectMapper().convertValue(fishbowl, Map.class);
+        return new ObjectMapper().registerModule(new JavaTimeModule()).convertValue(fishbowl, Map.class);
     }
 }

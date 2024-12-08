@@ -7,7 +7,7 @@ import com.aqualifeplus.aqualifeplus.fishbowl.dto.firebase.Fishbowl;
 import com.aqualifeplus.aqualifeplus.fishbowl.dto.local.ConnectDto;
 import com.aqualifeplus.aqualifeplus.users.dto.SuccessDto;
 import com.aqualifeplus.aqualifeplus.users.repository.UsersRepository;
-import com.aqualifeplus.aqualifeplus.websocket.FirebaseSaveService;
+import com.aqualifeplus.aqualifeplus.fishbowl.repository.FirebaseRealTimeRepository;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ public class FishbowlServiceImpl implements FishbowlService{
     private static final int ADAY = 60 * 60 * 24;
 
     private final JwtService jwtService;
-    private final FirebaseSaveService firebaseSaveService;
+    private final FirebaseRealTimeRepository firebaseRealTimeRepository;
     private final UsersRepository usersRepository;
     private final RedisTemplate<String, String> redisTemplate;
 
@@ -29,11 +29,11 @@ public class FishbowlServiceImpl implements FishbowlService{
         long userId = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)).getUserId();
         //이름이 비어있는 어항은 삭제
-        firebaseSaveService.deleteFishbowlWithName(userId, "이름을 정해주세요!");
+        firebaseRealTimeRepository.deleteFishbowlWithName(userId, "이름을 정해주세요!");
         //uuid생성
         String fishbowlId = createUUID();
         //firebase에 기본적인 틀 생성
-        firebaseSaveService.createFishbowl(
+        firebaseRealTimeRepository.createFishbowl(
                 userId, fishbowlId, Fishbowl.makeFrame());
         //그리고 redis에 저장
         redisTemplate.opsForValue().set(
@@ -59,7 +59,7 @@ public class FishbowlServiceImpl implements FishbowlService{
             throw new CustomException(ErrorCode.NOT_FOUND_NEW_FISHBOWL_ID_USE_THIS_USER_ID);
         }
 
-        firebaseSaveService.updateName(userId, fishbowlId, name);
+        firebaseRealTimeRepository.updateName(userId, fishbowlId, name);
 
         return SuccessDto.builder()
                 .success(true)
@@ -76,7 +76,7 @@ public class FishbowlServiceImpl implements FishbowlService{
             throw new CustomException(ErrorCode.NOT_FOUND_NEW_FISHBOWL_ID_USE_THIS_USER_ID);
         }
 
-        firebaseSaveService.updateName(userId, fishbowlToken, name);
+        firebaseRealTimeRepository.updateName(userId, fishbowlToken, name);
 
         return SuccessDto.builder()
                 .success(true)

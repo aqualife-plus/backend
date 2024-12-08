@@ -1,4 +1,4 @@
-package com.aqualifeplus.aqualifeplus.websocket;
+package com.aqualifeplus.aqualifeplus.fishbowl.repository;
 
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
@@ -12,12 +12,13 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 
 @Slf4j
-@Service
+@Repository
 @RequiredArgsConstructor
-public class FirebaseSaveService {
+public class FirebaseRealTimeRepository {
     public void createFishbowl(long userId, String fishbowlId, Fishbowl fishbowl) {
         DatabaseReference userRef =
                 FirebaseDatabase.getInstance().getReference(String.valueOf(userId));
@@ -83,6 +84,7 @@ public class FirebaseSaveService {
     }
 
 
+    //이건 옳기는 게 좋을 듯?
     public void updateName(long userId, String fishbowlId, String name) {
         DatabaseReference userRef =
                 FirebaseDatabase.getInstance()

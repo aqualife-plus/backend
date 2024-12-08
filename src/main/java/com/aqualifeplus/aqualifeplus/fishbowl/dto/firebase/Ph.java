@@ -5,12 +5,12 @@ import lombok.Data;
 
 @Data
 @Builder
-public class PhDTO {
+public class Ph {
     private double warningMaxPh;
     private double warningMinPh;
 
-    public static PhDTO startPhData() {
-        return PhDTO.builder()
+    public static Ph startPhData() {
+        return Ph.builder()
                 .warningMaxPh(10.0)
                 .warningMinPh(0.0)
                 .build();

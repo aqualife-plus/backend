@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -22,6 +23,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
+
     private final List<String> excludedPaths =
             Arrays.asList(
                     "/auth/login",
@@ -30,6 +32,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     "/auth/google/login", "/oauth2/authorization/google/**",
                     "/auth/naver/login", "/oauth2/authorization/naver/**",
                     "/users/check-email");
+
+
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException{

@@ -2,12 +2,9 @@ package com.aqualifeplus.aqualifeplus.websocket;
 
 
 import static com.aqualifeplus.aqualifeplus.common.exception.ErrorCode.FAIL_FIREBASE_SAVE;
-import static com.aqualifeplus.aqualifeplus.common.exception.ErrorCode.FAIL_UPDATE_NAME;
-import static com.aqualifeplus.aqualifeplus.common.exception.ErrorCode.RABBITMQ_BASIC_REJECT_ERROR;
 
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
-import com.rabbitmq.client.Channel;
-import java.io.IOException;
+import com.aqualifeplus.aqualifeplus.fishbowl.repository.FirebaseRealTimeRepository;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
@@ -17,10 +14,8 @@ import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -32,7 +27,7 @@ public class MessageQueueService {
 
     @Autowired
     @Lazy
-    private FirebaseSaveService firebaseSaveService;
+    private FirebaseRealTimeRepository firebaseRealTimeRepository;
 
     // 메시지를 RabbitMQ 큐에 송신
     public void sendMessageToQueue(String message) {
@@ -74,7 +69,7 @@ public class MessageQueueService {
             if (matcher.find()) {
                 String type = matcher.group(1); // "업데이트"
                 String messages = matcher.group(2); // "ㄱㄱ"
-                firebaseSaveService.updateOnOff(
+                firebaseRealTimeRepository.updateOnOff(
                         sessionIdArr[0], sessionIdArr[1],
                         type, Boolean.parseBoolean(messages));
                 log.info("Data saved to Firebase successfully.(구현x)");

@@ -5,11 +5,11 @@ import lombok.Data;
 
 @Data
 @Builder
-public class TempDTO {
+public class Temp {
     private double tempStay;
 
-    public static TempDTO startTempData() {
-        return TempDTO.builder()
+    public static Temp startTempData() {
+        return Temp.builder()
                 .tempStay(0.0)
                 .build();
     }
