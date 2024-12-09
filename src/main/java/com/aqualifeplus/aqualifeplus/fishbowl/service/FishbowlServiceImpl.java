@@ -3,63 +3,113 @@ package com.aqualifeplus.aqualifeplus.fishbowl.service;
 import com.aqualifeplus.aqualifeplus.auth.jwt.JwtService;
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
-import com.aqualifeplus.aqualifeplus.fishbowl.dto.firebase.Fishbowl;
-import com.aqualifeplus.aqualifeplus.fishbowl.dto.local.ConnectDto;
+import com.aqualifeplus.aqualifeplus.config.FirebaseConfig;
+import com.aqualifeplus.aqualifeplus.fishbowl.dto.ConnectDto;
+import com.aqualifeplus.aqualifeplus.fishbowl.entity.Fishbowl;
+import com.aqualifeplus.aqualifeplus.firebase.entity.FishbowlData;
+import com.aqualifeplus.aqualifeplus.firebase.repository.FirebaseHttpRepository;
+import com.aqualifeplus.aqualifeplus.fishbowl.repository.FishbowlRepository;
 import com.aqualifeplus.aqualifeplus.users.dto.SuccessDto;
+import com.aqualifeplus.aqualifeplus.users.entity.Users;
 import com.aqualifeplus.aqualifeplus.users.repository.UsersRepository;
-import com.aqualifeplus.aqualifeplus.fishbowl.repository.FirebaseRealTimeRepository;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class FishbowlServiceImpl implements FishbowlService{
+public class FishbowlServiceImpl implements FishbowlService {
     private static final int ADAY = 60 * 60 * 24;
 
     private final JwtService jwtService;
-    private final FirebaseRealTimeRepository firebaseRealTimeRepository;
-    private final UsersRepository usersRepository;
     private final RedisTemplate<String, String> redisTemplate;
+    private final FirebaseConfig firebaseConfig;
+
+    private final UsersRepository usersRepository;
+    private final FishbowlRepository fishbowlRepository;
+    private final FirebaseHttpRepository firebaseHttpRepository;
 
     @Override
+    @Transactional
     public ConnectDto connect() {
-        long userId = usersRepository.findByEmail(jwtService.getEmail())
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)).getUserId();
-        //이름이 비어있는 어항은 삭제
-        firebaseRealTimeRepository.deleteFishbowlWithName(userId, "이름을 정해주세요!");
-        //uuid생성
-        String fishbowlId = createUUID();
+        //변수생성
+        String accessToken = firebaseConfig.getAccessToken();
+        Users users = usersRepository.findByEmail(jwtService.getEmail())
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+        String createFishbowlId = createUUID();
+        List<String> deleteFishbowlList = new ArrayList<>();
+
+        //firebase에서 userId에 모든 어항 가져오기
+        Map<String, Map<String, Object>> firebaseData = firebaseHttpRepository.getFirebaseData(
+                String.valueOf(users.getUserId()), accessToken,
+                new ParameterizedTypeReference<Map<String, Map<String, Object>>>() {
+                });
+
+        if (firebaseData != null) {
+            //여기서 이름이 설정안된 친구만 찾고 firebase에서 삭제 + 해당 fishbowlId를 list에 저장
+            for (Map.Entry<String, Map<String, Object>> entry : firebaseData.entrySet()) {
+                Map<String, Object> fishbowlData = entry.getValue();
+                System.out.println(fishbowlData);
+
+                if (fishbowlData.containsKey("name") &&
+                        fishbowlData.get("name").equals("이름을 정해주세요!")) {
+                    deleteFishbowlList.add(entry.getKey());
+                    firebaseHttpRepository.deleteFirebaseData(
+                            users.getUserId() + "/" + entry.getKey(), accessToken);
+                }
+            }
+        }
+
+        //저장된 list값으로 삭제
+        fishbowlRepository.deleteByFishbowlIdIn(deleteFishbowlList);
+
+        Fishbowl fishbowl = Fishbowl.builder()
+                .fishbowlId(createFishbowlId)
+                .users(users)
+                .build();
+
         //firebase에 기본적인 틀 생성
-        firebaseRealTimeRepository.createFishbowl(
-                userId, fishbowlId, Fishbowl.makeFrame());
-        //그리고 redis에 저장
+        firebaseHttpRepository.createFirebaseData(
+                FishbowlData.makeFrame(), users.getUserId() + "/" + createFishbowlId, accessToken);
+        fishbowlRepository.save(fishbowl);
+
+        //그리고 이름 생성을 위한 fishbowlid를 redis에 저장
         redisTemplate.opsForValue().set(
-                "fishbowl id : " + userId,
-                fishbowlId,
+                "fishbowl id : " + users.getUserId(),
+                createFishbowlId,
                 ADAY,
                 TimeUnit.MILLISECONDS);
         //그다음에 return
         return ConnectDto.builder()
                 .success(true)
-                .fishbowlId(fishbowlId)
+                .fishbowlId(createFishbowlId)
                 .build();
     }
 
     @Override
     public SuccessDto createFishbowlName(String name) {
+        String accessToken = firebaseConfig.getAccessToken();
         long userId = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)).getUserId();
         String fishbowlId = redisTemplate.opsForValue().get("fishbowl id : " + userId);
-        
+
         //null 처리 필요
         if (fishbowlId == null) {
             throw new CustomException(ErrorCode.NOT_FOUND_NEW_FISHBOWL_ID_USE_THIS_USER_ID);
         }
 
-        firebaseRealTimeRepository.updateName(userId, fishbowlId, name);
+        Map<String, String> maps = new HashMap<>();
+        maps.put("name", name);
+        String url = userId + "/" + fishbowlId;
+        firebaseHttpRepository.updateFirebaseData(maps, url, accessToken);
 
         return SuccessDto.builder()
                 .success(true)
@@ -68,6 +118,7 @@ public class FishbowlServiceImpl implements FishbowlService{
 
     @Override
     public SuccessDto updateFishbowlName(String name) {
+        String accessToken = firebaseConfig.getAccessToken();
         long userId = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)).getUserId();
         String fishbowlToken = jwtService.getFishbowlToken();
@@ -76,7 +127,10 @@ public class FishbowlServiceImpl implements FishbowlService{
             throw new CustomException(ErrorCode.NOT_FOUND_NEW_FISHBOWL_ID_USE_THIS_USER_ID);
         }
 
-        firebaseRealTimeRepository.updateName(userId, fishbowlToken, name);
+        Map<String, String> maps = new HashMap<>();
+        maps.put("name", name);
+        String url = userId + "/" + fishbowlToken;
+        firebaseHttpRepository.updateFirebaseData(maps, url, accessToken);
 
         return SuccessDto.builder()
                 .success(true)

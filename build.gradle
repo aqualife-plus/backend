@@ -24,7 +24,7 @@ repositories {
 }
 
 dependencies {
-	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+//	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 
 	implementation 'org.springframework.boot:spring-boot-starter-aop'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'

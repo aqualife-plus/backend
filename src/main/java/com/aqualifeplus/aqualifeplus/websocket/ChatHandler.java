@@ -9,8 +9,7 @@ import static com.aqualifeplus.aqualifeplus.common.exception.ErrorCode.THREAD_IN
 
 import com.aqualifeplus.aqualifeplus.common.aop.NoLogging;
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
-import com.aqualifeplus.aqualifeplus.fishbowl.dto.local.FishbowlRealTimeDto;
-import com.aqualifeplus.aqualifeplus.fishbowl.dto.local.SessionInfoDto;
+import com.aqualifeplus.aqualifeplus.firebase.dto.FishbowlRealTimeDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;

@@ -1,6 +1,6 @@
 package com.aqualifeplus.aqualifeplus.fishbowl.controller;
 
-import com.aqualifeplus.aqualifeplus.fishbowl.dto.local.FishbowlNameDto;
+import com.aqualifeplus.aqualifeplus.fishbowl.dto.FishbowlNameDto;
 import com.aqualifeplus.aqualifeplus.fishbowl.service.FishbowlService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

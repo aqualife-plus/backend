@@ -21,6 +21,8 @@ public enum ErrorCode {
     FAIL_UPDATE_NAME("어항의 이름을 수정하지 못했습니다.", HttpStatus.BAD_REQUEST),
     NOT_FOUND_NEW_FISHBOWL_ID_USE_THIS_USER_ID("해당 유저가 만든 어항이 존재하지 않습니다.", HttpStatus.NOT_FOUND),
     NOT_MATCH_UPDATE_COLUMN("원하는 컬럼값이 들어오지않았습니다.", HttpStatus.BAD_REQUEST),
+    NOT_FOUND_LIGHT_RESERVE("해당 데이터로 Light 예약이 없습니다.", HttpStatus.NOT_FOUND),
+    NOT_FOUND_CO2_RESERVE("해당 데이터로 Co2 예약이 없습니다.", HttpStatus.NOT_FOUND),
 
     DISCONNECTED_FIREBASE_SERVER("firebase와 연결이 끊겼습니다.", HttpStatus.SERVICE_UNAVAILABLE),
     PERMISSION_DENIED_FIREBASE_SERVER("firebase와 연결이 허용되지 않습니다.", HttpStatus.BAD_GATEWAY),

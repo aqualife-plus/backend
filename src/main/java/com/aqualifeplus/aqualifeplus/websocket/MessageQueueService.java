@@ -4,7 +4,7 @@ package com.aqualifeplus.aqualifeplus.websocket;
 import static com.aqualifeplus.aqualifeplus.common.exception.ErrorCode.FAIL_FIREBASE_SAVE;
 
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
-import com.aqualifeplus.aqualifeplus.fishbowl.repository.FirebaseRealTimeRepository;
+import com.aqualifeplus.aqualifeplus.firebase.repository.FirebaseRealTimeRepository;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
