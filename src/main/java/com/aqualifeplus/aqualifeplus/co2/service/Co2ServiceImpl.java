@@ -15,12 +15,16 @@ import com.aqualifeplus.aqualifeplus.users.entity.Users;
 import com.aqualifeplus.aqualifeplus.users.repository.UsersRepository;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.common.aliasing.qual.Unique;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class Co2ServiceImpl implements Co2Service {
@@ -87,21 +91,6 @@ public class Co2ServiceImpl implements Co2Service {
                 .build();
     }
 
-    private void createCo2ReserveInRedis(Long userId, String fishbowlId,
-                                         String reserveType, String onOff,
-                                         Long reserveId, LocalTime settingTime) {
-        int expirationTime = getExpirationTime(settingTime, LocalTime.now());
-        if (expirationTime < 0) {
-            expirationTime += ADAY;
-        }
-
-        redisTemplateForFishbowlSettings
-                .opsForValue()
-                .set(userId + "/" + fishbowlId + "/" + reserveType + "/" + reserveId + "/" + onOff,
-                        settingTime + " " + expirationTime,
-                        expirationTime, TimeUnit.SECONDS);
-    }
-
     @Override
     @Transactional
     public Co2SuccessDto co2UpdateReserve(Long idx, Co2RequestDto co2RequestDto) {
@@ -114,6 +103,13 @@ public class Co2ServiceImpl implements Co2Service {
         targetCo2.setCo2ReserveState(co2RequestDto.isCo2ReserveState());
         targetCo2.setCo2StartTime(co2RequestDto.getCo2StartTime());
         targetCo2.setCo2EndTime(co2RequestDto.getCo2EndTime());
+
+        updateCo2ReserveInRedis(
+                users.getUserId(), targetCo2.getFishbowl().getFishbowlId(),
+                "co2", "on", targetCo2.getId(), targetCo2.getCo2StartTime());
+        updateCo2ReserveInRedis(
+                users.getUserId(), targetCo2.getFishbowl().getFishbowlId(),
+                "co2", "off", targetCo2.getId(), targetCo2.getCo2EndTime());
 
         return Co2SuccessDto.builder()
                 .success(true)
@@ -130,14 +126,71 @@ public class Co2ServiceImpl implements Co2Service {
 
         co2Repository.deleteByIdAndUsers(idx, users);
 
+        deleteCo2ReserveInRedis(users.getUserId(), "co2", idx);
+
         return DeleteCo2SuccessDto.builder()
                 .success(true)
                 .build();
     }
 
+
+    private void createCo2ReserveInRedis(Long userId, String fishbowlId,
+                                         String reserveType, String onOff,
+                                         Long reserveId, LocalTime settingTime) {
+        int expirationTime = getExpirationTime(settingTime, LocalTime.now());
+
+        redisTemplateForFishbowlSettings
+                .opsForValue()
+                .set(userId + "/" + fishbowlId + "/" + reserveType + "/" + reserveId + "/" + onOff,
+                        "", expirationTime, TimeUnit.SECONDS);
+        log.info(String.valueOf(
+                redisTemplateForFishbowlSettings.getExpire(
+                        userId + "/" + fishbowlId + "/" + reserveType + "/" + reserveId + "/" + onOff,
+                        TimeUnit.SECONDS)));
+    }
+
+    private void updateCo2ReserveInRedis(Long userId, @Unique String fishbowlId, String reserveType,
+                                         String onOff, Long reserveId, LocalTime settingTime) {
+        int expirationTime = getExpirationTime(settingTime, LocalTime.now());
+        String key =
+                userId + "/" + fishbowlId + "/" + reserveType + "/" + reserveId + "/" + onOff;
+
+        if (isExists(key)) {
+            redisTemplateForFishbowlSettings.expire(key, expirationTime, TimeUnit.SECONDS);
+            log.info(String.valueOf(redisTemplateForFishbowlSettings.getExpire(key, TimeUnit.SECONDS)));
+        } else {
+            //수정해야 함
+            throw new RuntimeException("해당 예약이 없습니다.");
+        }
+    }
+
+
+    public void deleteCo2ReserveInRedis(Long userId, String reserveType, Long reserveId) {
+        String pattern = userId + "/*/" + reserveType + "/" + reserveId + "/*";
+        Set<String> keys = redisTemplateForFishbowlSettings.keys(pattern);
+
+        if (keys != null && !keys.isEmpty()) {
+            System.out.println(keys);
+            redisTemplateForFishbowlSettings.delete(keys);
+            System.out.println("삭제된 키: " + keys);
+        } else {
+            System.out.println("삭제할 키가 없습니다.");
+        }
+    }
+
+    public boolean isExists(String key) {
+        return Boolean.TRUE.equals(redisTemplateForFishbowlSettings.hasKey(key));
+    }
+
     private static int getExpirationTime(LocalTime settingTime, LocalTime nowTime) {
-        return (((settingTime.getHour() - nowTime.getHour()) * 60)
+        int expirationTime = (((settingTime.getHour() - nowTime.getHour()) * 60)
                 + (settingTime.getMinute() - nowTime.getMinute())) * 60
                 - nowTime.getSecond();
+
+        if (expirationTime < 0) {
+            expirationTime += ADAY;
+        }
+
+        return expirationTime;
     }
 }
