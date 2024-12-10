@@ -23,15 +23,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                    WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
         List<String> authHeaders = request.getHeaders().get("Authorization");
-//        List<String> fishbowlHeaders = request.getHeaders().get("X-Fishbowl-Token");
         try {
-//            if (fishbowlHeaders != null && !fishbowlHeaders.isEmpty()
-//                    && !fishbowlHeaders.getFirst().equals(MyFishbowlAll)) {
-//                String fishbowlToken = fishbowlHeaders.getFirst();
-//                UUID.fromString(fishbowlToken);
-//                attributes.put("fishbowlToken", fishbowlToken);
-//            }
-
             if (authHeaders != null && !authHeaders.isEmpty()) {
                 String token = authHeaders.getFirst().replace("Bearer ", "");
                 if (!jwtService.isTokenExpired(token)) {

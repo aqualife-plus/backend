@@ -30,8 +30,8 @@ public class FishbowlServiceImpl implements FishbowlService {
     private static final int ADAY = 60 * 60 * 24;
 
     private final JwtService jwtService;
-    private final RedisTemplate<String, String> redisTemplate;
     private final FirebaseConfig firebaseConfig;
+    private final RedisTemplate<String, String> redisTemplateForTokens;
 
     private final UsersRepository usersRepository;
     private final FishbowlRepository fishbowlRepository;
@@ -82,8 +82,8 @@ public class FishbowlServiceImpl implements FishbowlService {
         fishbowlRepository.save(fishbowl);
 
         //그리고 이름 생성을 위한 fishbowlid를 redis에 저장
-        redisTemplate.opsForValue().set(
-                "fishbowl id : " + users.getUserId(),
+        redisTemplateForTokens.opsForValue().set(
+                "fishbowl : fishbowl id : " + users.getUserId(),
                 createFishbowlId,
                 ADAY,
                 TimeUnit.MILLISECONDS);
@@ -99,7 +99,7 @@ public class FishbowlServiceImpl implements FishbowlService {
         String accessToken = firebaseConfig.getAccessToken();
         long userId = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)).getUserId();
-        String fishbowlId = redisTemplate.opsForValue().get("fishbowl id : " + userId);
+        String fishbowlId = redisTemplateForTokens.opsForValue().get("fishbowl : fishbowl id : " + userId);
 
         //null 처리 필요
         if (fishbowlId == null) {

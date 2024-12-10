@@ -7,7 +7,6 @@ import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
 import com.aqualifeplus.aqualifeplus.users.entity.Users;
 import com.aqualifeplus.aqualifeplus.users.repository.UsersRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -20,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 public class AuthServiceImpl implements AuthService{
     private final JwtService jwtService;
     private final UsersRepository usersRepository;
-    private final RedisTemplate<String, String> redisTemplate;
+    private final RedisTemplate<String, String> redisTemplateForTokens;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -35,8 +34,8 @@ public class AuthServiceImpl implements AuthService{
                     jwtService.makeAccessToken(email),
                     jwtService.makeRefreshToken(email));
 
-            redisTemplate.opsForValue().set(
-                    "refreshToken:" + email,
+            redisTemplateForTokens.opsForValue().set(
+                    "users : refreshToken : " + email,
                     rt.getRefreshToken().substring(7),
                     jwtService.getRefreshTokenExpirationMs(),
                     TimeUnit.MILLISECONDS);
@@ -51,7 +50,7 @@ public class AuthServiceImpl implements AuthService{
         String authData = jwtService.getAuthorization();
         String email = jwtService.extractEmail(authData);
         String storedRefreshToken =
-                redisTemplate.opsForValue().get("refreshToken:" + email);
+                redisTemplateForTokens.opsForValue().get("users : refreshToken : " + email);
         if (storedRefreshToken != null && storedRefreshToken.equals(authData)) {
             return "Bearer " + jwtService.makeAccessToken(email);
         } else {

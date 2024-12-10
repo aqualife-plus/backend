@@ -34,6 +34,4 @@ public class WebSocketConfig implements WebSocketConfigurer {
     public ChatHandler chatHandler() {
         return new ChatHandler(messageQueueService);  // 생성자에 channel과 messageQueueService 전달
     }
-
-
 }

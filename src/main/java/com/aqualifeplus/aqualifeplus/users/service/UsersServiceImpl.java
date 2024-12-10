@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UsersServiceImpl implements UsersService{
     private final UsersRepository usersRepository;
-    private final RedisTemplate<String, String> redisTemplate;
+    private final RedisTemplate<String, String> redisTemplateForTokens;
     private final JwtService jwtService;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -106,7 +106,7 @@ public class UsersServiceImpl implements UsersService{
     @Override
     public SuccessDto logout() {
         boolean booleanValue = Boolean.TRUE.equals(
-                redisTemplate.delete("refreshToken:" + jwtService.getEmail()));
+                redisTemplateForTokens.delete("users : refreshToken : " + jwtService.getEmail()));
 
         return getSuccessDto(booleanValue);
     }
