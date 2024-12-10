@@ -134,9 +134,19 @@ public class Co2ServiceImpl implements Co2Service {
     }
 
 
+    public void nextCreateCo2ReserveInRedis(String key, LocalTime settingTime) {
+        int expirationTime = getExpirationTime(settingTime, LocalTime.now());
+
+        redisTemplateForFishbowlSettings
+                .opsForValue()
+                .set(key, "", expirationTime, TimeUnit.SECONDS);
+        log.info(String.valueOf(
+                redisTemplateForFishbowlSettings.getExpire(key, TimeUnit.SECONDS)));
+    }
+
     private void createCo2ReserveInRedis(Long userId, String fishbowlId,
-                                         String reserveType, String onOff,
-                                         Long reserveId, LocalTime settingTime) {
+                                          String reserveType, String onOff,
+                                          Long reserveId, LocalTime settingTime) {
         int expirationTime = getExpirationTime(settingTime, LocalTime.now());
 
         redisTemplateForFishbowlSettings
@@ -182,7 +192,7 @@ public class Co2ServiceImpl implements Co2Service {
         return Boolean.TRUE.equals(redisTemplateForFishbowlSettings.hasKey(key));
     }
 
-    private static int getExpirationTime(LocalTime settingTime, LocalTime nowTime) {
+    public static int getExpirationTime(LocalTime settingTime, LocalTime nowTime) {
         int expirationTime = (((settingTime.getHour() - nowTime.getHour()) * 60)
                 + (settingTime.getMinute() - nowTime.getMinute())) * 60
                 - nowTime.getSecond();

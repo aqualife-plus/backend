@@ -1,5 +1,6 @@
 package com.aqualifeplus.aqualifeplus.config;
 
+import com.aqualifeplus.aqualifeplus.firebase.repository.FirebaseRealTimeRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -32,13 +33,15 @@ public class RedisConfig {
     }
 
     @Bean
-    public RedisMessageListenerContainer redisContainer(RedisConnectionFactory connectionFactory) {
+    public RedisMessageListenerContainer redisContainer(
+            RedisConnectionFactory connectionFactory,
+            ExpiredEventListener expiredEventListener) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(connectionFactory);
 
         // 키 만료 이벤트 리스너 추가
         container.addMessageListener(
-                new ExpiredEventListener(),
+                expiredEventListener,
                 new PatternTopic("__keyevent@1__:expired"));
         return container;
     }
