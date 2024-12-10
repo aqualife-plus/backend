@@ -13,18 +13,25 @@ import com.aqualifeplus.aqualifeplus.fishbowl.entity.Fishbowl;
 import com.aqualifeplus.aqualifeplus.fishbowl.repository.FishbowlRepository;
 import com.aqualifeplus.aqualifeplus.users.entity.Users;
 import com.aqualifeplus.aqualifeplus.users.repository.UsersRepository;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class Co2ServiceImpl implements Co2Service {
+    private static final int ADAY = 60 * 60 * 24;
+
     private final JwtService jwtService;
     private final Co2Repository co2Repository;
     private final UsersRepository usersRepository;
     private final FishbowlRepository fishbowlRepository;
+
+    private final RedisTemplate<String, String> redisTemplateForFishbowlSettings;
 
     @Override
     public List<Co2ResponseDto> co2ReserveList() {
@@ -67,10 +74,32 @@ public class Co2ServiceImpl implements Co2Service {
                 .fishbowl(fishbowl)
                 .build());
 
+        createCo2ReserveInRedis(
+                users.getUserId(), fishbowl.getFishbowlId(),
+                "co2", "on", saveCo2.getId(), saveCo2.getCo2StartTime());
+        createCo2ReserveInRedis(
+                users.getUserId(), fishbowl.getFishbowlId(),
+                "co2", "off", saveCo2.getId(), saveCo2.getCo2EndTime());
+
         return Co2SuccessDto.builder()
                 .success(true)
                 .co2ResponseDto(Co2ResponseDto.toResponseDto(saveCo2))
                 .build();
+    }
+
+    private void createCo2ReserveInRedis(Long userId, String fishbowlId,
+                                         String reserveType, String onOff,
+                                         Long reserveId, LocalTime settingTime) {
+        int expirationTime = getExpirationTime(settingTime, LocalTime.now());
+        if (expirationTime < 0) {
+            expirationTime += ADAY;
+        }
+
+        redisTemplateForFishbowlSettings
+                .opsForValue()
+                .set(userId + "/" + fishbowlId + "/" + reserveType + "/" + reserveId + "/" + onOff,
+                        settingTime + " " + expirationTime,
+                        expirationTime, TimeUnit.SECONDS);
     }
 
     @Override
@@ -104,5 +133,11 @@ public class Co2ServiceImpl implements Co2Service {
         return DeleteCo2SuccessDto.builder()
                 .success(true)
                 .build();
+    }
+
+    private static int getExpirationTime(LocalTime settingTime, LocalTime nowTime) {
+        return (((settingTime.getHour() - nowTime.getHour()) * 60)
+                + (settingTime.getMinute() - nowTime.getMinute())) * 60
+                - nowTime.getSecond();
     }
 }
