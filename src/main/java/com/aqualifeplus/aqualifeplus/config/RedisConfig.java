@@ -1,6 +1,6 @@
 package com.aqualifeplus.aqualifeplus.config;
 
-import com.aqualifeplus.aqualifeplus.firebase.repository.FirebaseRealTimeRepository;
+import com.aqualifeplus.aqualifeplus.common.redis.ExpiredEventListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;

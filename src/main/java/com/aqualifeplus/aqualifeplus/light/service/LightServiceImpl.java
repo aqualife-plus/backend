@@ -3,28 +3,38 @@ package com.aqualifeplus.aqualifeplus.light.service;
 import com.aqualifeplus.aqualifeplus.auth.jwt.JwtService;
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
-import com.aqualifeplus.aqualifeplus.light.dto.LightSuccessDto;
+import com.aqualifeplus.aqualifeplus.common.redis.FishbowlSettingRedis;
+import com.aqualifeplus.aqualifeplus.common.redis.RedisReserveCommonService;
+import com.aqualifeplus.aqualifeplus.fishbowl.entity.Fishbowl;
+import com.aqualifeplus.aqualifeplus.fishbowl.repository.FishbowlRepository;
 import com.aqualifeplus.aqualifeplus.light.dto.DeleteLightSuccessDto;
 import com.aqualifeplus.aqualifeplus.light.dto.LightRequestDto;
 import com.aqualifeplus.aqualifeplus.light.dto.LightResponseDto;
-import com.aqualifeplus.aqualifeplus.fishbowl.entity.Fishbowl;
+import com.aqualifeplus.aqualifeplus.light.dto.LightSuccessDto;
 import com.aqualifeplus.aqualifeplus.light.entity.Light;
-import com.aqualifeplus.aqualifeplus.fishbowl.repository.FishbowlRepository;
 import com.aqualifeplus.aqualifeplus.light.repository.LightRepository;
 import com.aqualifeplus.aqualifeplus.users.entity.Users;
 import com.aqualifeplus.aqualifeplus.users.repository.UsersRepository;
+import java.time.LocalTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LightServiceImpl implements LightService {
+    private static final int ADAY = 60 * 60 * 24;
+
     private final JwtService jwtService;
     private final UsersRepository usersRepository;
     private final LightRepository lightRepository;
     private final FishbowlRepository fishbowlRepository;
+
+    private final FishbowlSettingRedis fishbowlSettingRedis;
+    private final RedisReserveCommonService redisReserveCommonService;
 
     @Override
     public List<LightResponseDto> lightReserveList() {
@@ -32,7 +42,6 @@ public class LightServiceImpl implements LightService {
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
         Fishbowl fishbowl = fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_NEW_FISHBOWL_ID_USE_THIS_USER_ID));
-
         List<Light> lightList = lightRepository
                 .findAllByFishbowlAndUsers(fishbowl, users);
 
@@ -60,15 +69,24 @@ public class LightServiceImpl implements LightService {
         Fishbowl fishbowl = fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_NEW_FISHBOWL_ID_USE_THIS_USER_ID));
 
-        System.out.println(fishbowl);
+        Light saveLight = lightRepository.save(
+                Light.builder()
+                        .lightReserveState(lightRequestDto.isLightReserveState())
+                        .lightStartTime(lightRequestDto.getLightStartTime())
+                        .lightEndTime(lightRequestDto.getLightEndTime())
+                        .users(users)
+                        .fishbowl(fishbowl)
+                        .build()
+        );
 
-        Light saveLight = lightRepository.save(Light.builder()
-                .lightReserveState(lightRequestDto.isLightReserveState())
-                .lightStartTime(lightRequestDto.getLightStartTime())
-                .lightEndTime(lightRequestDto.getLightEndTime())
-                .users(users)
-                .fishbowl(fishbowl)
-                .build());
+        fishbowlSettingRedis.createCo2LightReserveInRedis(
+                redisReserveCommonService.makeKey(users, fishbowl, saveLight.getId(), "light", "on"),
+                redisReserveCommonService.getExpirationTime(saveLight.getLightStartTime(), LocalTime.now())
+        );
+        fishbowlSettingRedis.createCo2LightReserveInRedis(
+                redisReserveCommonService.makeKey(users, fishbowl, saveLight.getId(), "light", "off"),
+                redisReserveCommonService.getExpirationTime(saveLight.getLightEndTime(), LocalTime.now())
+        );
 
         return LightSuccessDto.builder()
                 .success(true)
@@ -90,6 +108,16 @@ public class LightServiceImpl implements LightService {
         targetLight.setLightStartTime(lightRequestDto.getLightStartTime());
         targetLight.setLightEndTime(lightRequestDto.getLightEndTime());
 
+        fishbowlSettingRedis.updateCo2LightReserveInRedis(
+                redisReserveCommonService.makeKey(users, targetLight.getFishbowl(), targetLight.getId(), "light", "on"),
+                redisReserveCommonService.getExpirationTime(targetLight.getLightStartTime(), LocalTime.now())
+        );
+        fishbowlSettingRedis.updateCo2LightReserveInRedis(
+                redisReserveCommonService.makeKey(users, targetLight.getFishbowl(), targetLight.getId(), "light",
+                        "off"),
+                redisReserveCommonService.getExpirationTime(targetLight.getLightEndTime(), LocalTime.now())
+        );
+
         return LightSuccessDto.builder()
                 .success(true)
                 .lightResponseDto(
@@ -104,6 +132,10 @@ public class LightServiceImpl implements LightService {
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
         lightRepository.deleteByIdAndUsers(idx, users);
+
+        String pattern = users.getUserId() + "/*/" + "light" + "/" + idx + "/*";
+
+        fishbowlSettingRedis.deleteCo2LightReserveInRedis(pattern, idx);
 
         return DeleteLightSuccessDto.builder()
                 .success(true)

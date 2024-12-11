@@ -1,6 +1,5 @@
-package com.aqualifeplus.aqualifeplus.config;
+package com.aqualifeplus.aqualifeplus.common.redis;
 
-import com.aqualifeplus.aqualifeplus.co2.service.Co2Service;
 import com.aqualifeplus.aqualifeplus.firebase.repository.FirebaseRealTimeRepository;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +17,6 @@ public class ExpiredEventListener implements MessageListener {
 
     private final FirebaseRealTimeRepository firebaseRealTimeRepository;
     private final RedisTemplate<String, String> redisTemplateForFishbowlSettings;
-    private final Co2Service co2Service;
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
@@ -34,19 +32,19 @@ public class ExpiredEventListener implements MessageListener {
         if (key.contains("filter")) {
             System.out.println("filter입니다.");
         } else if (key.contains("co2")) {
-            String[] strArr = key.split("/");
-            firebaseRealTimeRepository.updateOnOff(
-                    strArr[0], strArr[1], "co2State", strArr[4].equals("on"));
-            redisTemplateForFishbowlSettings.opsForValue().set(key, "", ADAY, TimeUnit.SECONDS);
-            log.info(String.valueOf(redisTemplateForFishbowlSettings.getExpire(key, TimeUnit.SECONDS)));
+            updateOnOffUseReserve(key, "co2State");
         } else if (key.contains("light")) {
-            String[] strArr = key.split("/");
-            firebaseRealTimeRepository.updateOnOff(
-                    strArr[0], strArr[1], "lightState", strArr[4].equals("on"));
-            redisTemplateForFishbowlSettings.opsForValue().set(key, "", ADAY, TimeUnit.SECONDS);
-            log.info(String.valueOf(redisTemplateForFishbowlSettings.getExpire(key, TimeUnit.SECONDS)));
+            updateOnOffUseReserve(key, "lightState");
         } else {
             throw new RuntimeException("예상치 못한 데이터입니다.");
         }
+    }
+
+    private void updateOnOffUseReserve(String key, String co2State) {
+        String[] strArr = key.split("/");
+        firebaseRealTimeRepository.updateOnOff(
+                strArr[0], strArr[1], co2State, strArr[4].equals("on"));
+        redisTemplateForFishbowlSettings.opsForValue().set(key, "", ADAY, TimeUnit.SECONDS);
+        log.info(String.valueOf(redisTemplateForFishbowlSettings.getExpire(key, TimeUnit.SECONDS)));
     }
 }
