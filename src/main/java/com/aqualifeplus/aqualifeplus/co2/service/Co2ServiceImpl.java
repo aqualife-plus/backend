@@ -77,14 +77,16 @@ public class Co2ServiceImpl implements Co2Service {
                         .build()
         );
 
-        fishbowlSettingRedis.createCo2LightReserveInRedis(
-                redisReserveCommonService.makeKey(users, fishbowl, saveCo2.getId(), "co2", "on"),
-                redisReserveCommonService.getExpirationTime(saveCo2.getCo2StartTime(), LocalTime.now())
-        );
-        fishbowlSettingRedis.createCo2LightReserveInRedis(
-                redisReserveCommonService.makeKey(users, fishbowl, saveCo2.getId(), "co2", "off"),
-                redisReserveCommonService.getExpirationTime(saveCo2.getCo2EndTime(), LocalTime.now())
-        );
+        if (saveCo2.isCo2ReserveState()) {
+            fishbowlSettingRedis.createCo2LightReserveInRedis(
+                    redisReserveCommonService.makeKey(users, fishbowl, saveCo2.getId(), "co2", "on"),
+                    redisReserveCommonService.getExpirationTime(saveCo2.getCo2StartTime(), LocalTime.now())
+            );
+            fishbowlSettingRedis.createCo2LightReserveInRedis(
+                    redisReserveCommonService.makeKey(users, fishbowl, saveCo2.getId(), "co2", "off"),
+                    redisReserveCommonService.getExpirationTime(saveCo2.getCo2EndTime(), LocalTime.now())
+            );
+        }
 
         return Co2SuccessDto.builder()
                 .success(true)
@@ -106,14 +108,37 @@ public class Co2ServiceImpl implements Co2Service {
         targetCo2.setCo2StartTime(co2RequestDto.getCo2StartTime());
         targetCo2.setCo2EndTime(co2RequestDto.getCo2EndTime());
 
-        fishbowlSettingRedis.updateCo2LightReserveInRedis(
-                redisReserveCommonService.makeKey(users, targetCo2.getFishbowl(), targetCo2.getId(), "co2", "on"),
-                redisReserveCommonService.getExpirationTime(targetCo2.getCo2StartTime(), LocalTime.now())
-        );
-        fishbowlSettingRedis.updateCo2LightReserveInRedis(
-                redisReserveCommonService.makeKey(users, targetCo2.getFishbowl(), targetCo2.getId(), "co2", "off"),
-                redisReserveCommonService.getExpirationTime(targetCo2.getCo2EndTime(), LocalTime.now())
-        );
+        String onKey =
+                redisReserveCommonService.makeKey(
+                        users,
+                        targetCo2.getFishbowl(),
+                        targetCo2.getId(), "co2", "on");
+        String offKey =
+                redisReserveCommonService.makeKey(
+                        users,
+                        targetCo2.getFishbowl(),
+                        targetCo2.getId(), "co2", "off");
+        int getStartExpirationTime =
+                redisReserveCommonService.getExpirationTime(targetCo2.getCo2StartTime(), LocalTime.now());
+        int getEndExpirationTime =
+                redisReserveCommonService.getExpirationTime(targetCo2.getCo2EndTime(), LocalTime.now());
+        String pattern = users.getUserId() + "/*/" + "co2" + "/" + idx + "/*";
+
+        switch (redisReserveCommonService.checkUpdateStateANDIsExistsKeys(
+                targetCo2.isCo2ReserveState(),
+                fishbowlSettingRedis.isExists(onKey) && fishbowlSettingRedis.isExists(offKey))
+        ) {
+            case UPDATE_STATE_TRUE_IS_EXIST_TRUE -> {
+                fishbowlSettingRedis.updateCo2LightReserveInRedis(onKey, getStartExpirationTime);
+                fishbowlSettingRedis.updateCo2LightReserveInRedis(offKey, getEndExpirationTime);
+            }
+            case UPDATE_STATE_TRUE_IS_EXIST_FALSE -> {
+                fishbowlSettingRedis.createCo2LightReserveInRedis(onKey, getStartExpirationTime);
+                fishbowlSettingRedis.createCo2LightReserveInRedis(offKey, getEndExpirationTime);
+            }
+            case UPDATE_STATE_FALSE_IS_EXIST_TRUE -> fishbowlSettingRedis.deleteCo2LightReserveInRedis(pattern, idx);
+            default -> log.info("변경된 값과 현재 값 모두 설정이 false입니다.");
+        }
 
         return Co2SuccessDto.builder()
                 .success(true)

@@ -26,8 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class LightServiceImpl implements LightService {
-    private static final int ADAY = 60 * 60 * 24;
-
     private final JwtService jwtService;
     private final UsersRepository usersRepository;
     private final LightRepository lightRepository;
@@ -79,14 +77,16 @@ public class LightServiceImpl implements LightService {
                         .build()
         );
 
-        fishbowlSettingRedis.createCo2LightReserveInRedis(
-                redisReserveCommonService.makeKey(users, fishbowl, saveLight.getId(), "light", "on"),
-                redisReserveCommonService.getExpirationTime(saveLight.getLightStartTime(), LocalTime.now())
-        );
-        fishbowlSettingRedis.createCo2LightReserveInRedis(
-                redisReserveCommonService.makeKey(users, fishbowl, saveLight.getId(), "light", "off"),
-                redisReserveCommonService.getExpirationTime(saveLight.getLightEndTime(), LocalTime.now())
-        );
+        if (saveLight.isLightReserveState()) {
+            fishbowlSettingRedis.createCo2LightReserveInRedis(
+                    redisReserveCommonService.makeKey(users, fishbowl, saveLight.getId(), "light", "on"),
+                    redisReserveCommonService.getExpirationTime(saveLight.getLightStartTime(), LocalTime.now())
+            );
+            fishbowlSettingRedis.createCo2LightReserveInRedis(
+                    redisReserveCommonService.makeKey(users, fishbowl, saveLight.getId(), "light", "off"),
+                    redisReserveCommonService.getExpirationTime(saveLight.getLightEndTime(), LocalTime.now())
+            );
+        }
 
         return LightSuccessDto.builder()
                 .success(true)
@@ -108,15 +108,37 @@ public class LightServiceImpl implements LightService {
         targetLight.setLightStartTime(lightRequestDto.getLightStartTime());
         targetLight.setLightEndTime(lightRequestDto.getLightEndTime());
 
-        fishbowlSettingRedis.updateCo2LightReserveInRedis(
-                redisReserveCommonService.makeKey(users, targetLight.getFishbowl(), targetLight.getId(), "light", "on"),
-                redisReserveCommonService.getExpirationTime(targetLight.getLightStartTime(), LocalTime.now())
-        );
-        fishbowlSettingRedis.updateCo2LightReserveInRedis(
-                redisReserveCommonService.makeKey(users, targetLight.getFishbowl(), targetLight.getId(), "light",
-                        "off"),
-                redisReserveCommonService.getExpirationTime(targetLight.getLightEndTime(), LocalTime.now())
-        );
+        String onKey =
+                redisReserveCommonService.makeKey(
+                        users,
+                        targetLight.getFishbowl(),
+                        targetLight.getId(), "light", "on");
+        String offKey =
+                redisReserveCommonService.makeKey(
+                        users,
+                        targetLight.getFishbowl(),
+                        targetLight.getId(), "light", "off");
+        int getStartExpirationTime =
+                redisReserveCommonService.getExpirationTime(targetLight.getLightStartTime(), LocalTime.now());
+        int getEndExpirationTime =
+                redisReserveCommonService.getExpirationTime(targetLight.getLightEndTime(), LocalTime.now());
+        String pattern = users.getUserId() + "/*/" + "light" + "/" + idx + "/*";
+
+        switch (redisReserveCommonService.checkUpdateStateANDIsExistsKeys(
+                targetLight.isLightReserveState(),
+                fishbowlSettingRedis.isExists(onKey) && fishbowlSettingRedis.isExists(offKey))
+        ) {
+            case UPDATE_STATE_TRUE_IS_EXIST_TRUE -> {
+                fishbowlSettingRedis.updateCo2LightReserveInRedis(onKey, getStartExpirationTime);
+                fishbowlSettingRedis.updateCo2LightReserveInRedis(offKey, getEndExpirationTime);
+            }
+            case UPDATE_STATE_TRUE_IS_EXIST_FALSE -> {
+                fishbowlSettingRedis.createCo2LightReserveInRedis(onKey, getStartExpirationTime);
+                fishbowlSettingRedis.createCo2LightReserveInRedis(offKey, getEndExpirationTime);
+            }
+            case UPDATE_STATE_FALSE_IS_EXIST_TRUE -> fishbowlSettingRedis.deleteCo2LightReserveInRedis(pattern, idx);
+            default -> log.info("변경된 값과 현재 값 모두 설정이 false입니다.");
+        }
 
         return LightSuccessDto.builder()
                 .success(true)
@@ -135,7 +157,7 @@ public class LightServiceImpl implements LightService {
 
         String pattern = users.getUserId() + "/*/" + "light" + "/" + idx + "/*";
 
-        fishbowlSettingRedis.deleteCo2LightReserveInRedis(pattern, idx);
+        fishbowlSettingRedis.deleteCo2LightReserveInRedis(pattern);
 
         return DeleteLightSuccessDto.builder()
                 .success(true)

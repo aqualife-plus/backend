@@ -1,5 +1,11 @@
 package com.aqualifeplus.aqualifeplus.common.redis;
 
+import static com.aqualifeplus.aqualifeplus.common.enum_type.CheckReserveState.UPDATE_STATE_FALSE_IS_EXIST_FALSE;
+import static com.aqualifeplus.aqualifeplus.common.enum_type.CheckReserveState.UPDATE_STATE_FALSE_IS_EXIST_TRUE;
+import static com.aqualifeplus.aqualifeplus.common.enum_type.CheckReserveState.UPDATE_STATE_TRUE_IS_EXIST_FALSE;
+import static com.aqualifeplus.aqualifeplus.common.enum_type.CheckReserveState.UPDATE_STATE_TRUE_IS_EXIST_TRUE;
+
+import com.aqualifeplus.aqualifeplus.common.enum_type.CheckReserveState;
 import com.aqualifeplus.aqualifeplus.fishbowl.entity.Fishbowl;
 import com.aqualifeplus.aqualifeplus.users.entity.Users;
 import java.time.LocalTime;
@@ -25,5 +31,21 @@ public class RedisReserveCommonService {
         }
 
         return expirationTime;
+    }
+
+    public CheckReserveState checkUpdateStateANDIsExistsKeys(boolean state, boolean isExistKeys) {
+        if (state && isExistKeys) {
+            return UPDATE_STATE_TRUE_IS_EXIST_TRUE;
+        } else if (state) {
+                return UPDATE_STATE_TRUE_IS_EXIST_FALSE;
+        } else if (isExistKeys) {
+            return UPDATE_STATE_FALSE_IS_EXIST_TRUE;
+        } else {
+            return UPDATE_STATE_FALSE_IS_EXIST_FALSE;
+        }
+    }
+
+    public void deleteAllRedisData() {
+
     }
 }

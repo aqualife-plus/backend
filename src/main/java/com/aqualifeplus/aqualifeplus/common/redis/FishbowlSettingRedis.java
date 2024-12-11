@@ -34,7 +34,7 @@ public class FishbowlSettingRedis {
     }
 
 
-    public void deleteCo2LightReserveInRedis(String pattern, Long reserveId) {
+    public void deleteCo2LightReserveInRedis(String pattern) {
         Set<String> keys = redisTemplateForFishbowlSettings.keys(pattern);
 
         if (keys != null && !keys.isEmpty()) {
