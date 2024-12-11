@@ -9,4 +9,7 @@ public interface FishbowlService {
     SuccessDto createFishbowlName(String name);
 
     SuccessDto updateFishbowlName(String name);
+
+    SuccessDto deleteFishbowl();
+
 }

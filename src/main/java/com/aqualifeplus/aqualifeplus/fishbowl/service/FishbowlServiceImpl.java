@@ -1,14 +1,17 @@
 package com.aqualifeplus.aqualifeplus.fishbowl.service;
 
 import com.aqualifeplus.aqualifeplus.auth.jwt.JwtService;
+import com.aqualifeplus.aqualifeplus.co2.repository.Co2Repository;
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
+import com.aqualifeplus.aqualifeplus.common.redis.FishbowlSettingRedis;
 import com.aqualifeplus.aqualifeplus.config.FirebaseConfig;
 import com.aqualifeplus.aqualifeplus.fishbowl.dto.ConnectDto;
 import com.aqualifeplus.aqualifeplus.fishbowl.entity.Fishbowl;
 import com.aqualifeplus.aqualifeplus.firebase.entity.FishbowlData;
 import com.aqualifeplus.aqualifeplus.firebase.repository.FirebaseHttpRepository;
 import com.aqualifeplus.aqualifeplus.fishbowl.repository.FishbowlRepository;
+import com.aqualifeplus.aqualifeplus.light.repository.LightRepository;
 import com.aqualifeplus.aqualifeplus.users.dto.SuccessDto;
 import com.aqualifeplus.aqualifeplus.users.entity.Users;
 import com.aqualifeplus.aqualifeplus.users.repository.UsersRepository;
@@ -19,11 +22,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FishbowlServiceImpl implements FishbowlService {
@@ -31,10 +36,13 @@ public class FishbowlServiceImpl implements FishbowlService {
 
     private final JwtService jwtService;
     private final FirebaseConfig firebaseConfig;
+    private final FishbowlSettingRedis fishbowlSettingRedis;
     private final RedisTemplate<String, String> redisTemplateForTokens;
 
     private final UsersRepository usersRepository;
     private final FishbowlRepository fishbowlRepository;
+    private final Co2Repository co2Repository;
+    private final LightRepository lightRepository;
     private final FirebaseHttpRepository firebaseHttpRepository;
 
     @Override
@@ -57,7 +65,6 @@ public class FishbowlServiceImpl implements FishbowlService {
             //여기서 이름이 설정안된 친구만 찾고 firebase에서 삭제 + 해당 fishbowlId를 list에 저장
             for (Map.Entry<String, Map<String, Object>> entry : firebaseData.entrySet()) {
                 Map<String, Object> fishbowlData = entry.getValue();
-                System.out.println(fishbowlData);
 
                 if (fishbowlData.containsKey("name") &&
                         fishbowlData.get("name").equals("이름을 정해주세요!")) {
@@ -131,6 +138,33 @@ public class FishbowlServiceImpl implements FishbowlService {
         maps.put("name", name);
         String url = userId + "/" + fishbowlToken;
         firebaseHttpRepository.updateFirebaseData(maps, url, accessToken);
+
+        return SuccessDto.builder()
+                .success(true)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public SuccessDto deleteFishbowl() {
+        String accessToken = firebaseConfig.getAccessToken();
+        Users users = usersRepository.findByEmail(jwtService.getEmail())
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+        Fishbowl fishbowl = fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_NEW_FISHBOWL_ID_USE_THIS_USER_ID));
+
+        //firebase에서 어항삭제
+        firebaseHttpRepository.deleteFirebaseData(
+                users.getUserId() + "/" + fishbowl.getFishbowlId(), accessToken);
+        //rdbms에서 관련 값 다 삭제
+        co2Repository.deleteAllByFishbowl(fishbowl);
+        lightRepository.deleteAllByFishbowl(fishbowl);
+        //filter repo 삭제
+        fishbowlRepository.deleteByFishbowlId(fishbowl.getFishbowlId());
+
+        //redis에서 관련 값 다 삭제
+        fishbowlSettingRedis.deleteCo2LightReserveInRedis(
+                users.getUserId() + "/"+ fishbowl.getFishbowlId() +"/*/*/*");
 
         return SuccessDto.builder()
                 .success(true)

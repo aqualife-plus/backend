@@ -14,4 +14,5 @@ public interface Co2Repository extends JpaRepository<Co2, Long> {
     Optional<Co2> findByIdAndUsers(Long id, Users users);
 
     void deleteByIdAndUsers(long id, Users users);
+    void deleteAllByFishbowl(Fishbowl fishbowl);
 }

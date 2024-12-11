@@ -136,7 +136,7 @@ public class LightServiceImpl implements LightService {
                 fishbowlSettingRedis.createCo2LightReserveInRedis(onKey, getStartExpirationTime);
                 fishbowlSettingRedis.createCo2LightReserveInRedis(offKey, getEndExpirationTime);
             }
-            case UPDATE_STATE_FALSE_IS_EXIST_TRUE -> fishbowlSettingRedis.deleteCo2LightReserveInRedis(pattern, idx);
+            case UPDATE_STATE_FALSE_IS_EXIST_TRUE -> fishbowlSettingRedis.deleteCo2LightReserveInRedis(pattern);
             default -> log.info("변경된 값과 현재 값 모두 설정이 false입니다.");
         }
 

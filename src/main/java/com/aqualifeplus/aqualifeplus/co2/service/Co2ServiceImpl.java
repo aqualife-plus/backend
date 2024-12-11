@@ -136,7 +136,7 @@ public class Co2ServiceImpl implements Co2Service {
                 fishbowlSettingRedis.createCo2LightReserveInRedis(onKey, getStartExpirationTime);
                 fishbowlSettingRedis.createCo2LightReserveInRedis(offKey, getEndExpirationTime);
             }
-            case UPDATE_STATE_FALSE_IS_EXIST_TRUE -> fishbowlSettingRedis.deleteCo2LightReserveInRedis(pattern, idx);
+            case UPDATE_STATE_FALSE_IS_EXIST_TRUE -> fishbowlSettingRedis.deleteCo2LightReserveInRedis(pattern);
             default -> log.info("변경된 값과 현재 값 모두 설정이 false입니다.");
         }
 
@@ -157,7 +157,7 @@ public class Co2ServiceImpl implements Co2Service {
 
         String pattern = users.getUserId() + "/*/" + "co2" + "/" + idx + "/*";
 
-        fishbowlSettingRedis.deleteCo2LightReserveInRedis(pattern, idx);
+        fishbowlSettingRedis.deleteCo2LightReserveInRedis(pattern);
 
         return DeleteCo2SuccessDto.builder()
                 .success(true)
