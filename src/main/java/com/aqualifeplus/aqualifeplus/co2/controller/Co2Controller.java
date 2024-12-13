@@ -2,6 +2,7 @@ package com.aqualifeplus.aqualifeplus.co2.controller;
 
 import com.aqualifeplus.aqualifeplus.co2.dto.Co2RequestDto;
 import com.aqualifeplus.aqualifeplus.co2.service.Co2Service;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +28,7 @@ public class Co2Controller {
     }
 
     @PostMapping("/reserve")
-    public ResponseEntity<?> co2CreateReserve(@RequestBody Co2RequestDto co2RequestDto) {
+    public ResponseEntity<?> co2CreateReserve(@Valid @RequestBody Co2RequestDto co2RequestDto) {
         return ResponseEntity.ok(co2Service.co2CreateReserve(co2RequestDto));
     }
 
@@ -37,7 +38,7 @@ public class Co2Controller {
     }
 
     @PutMapping("/reserve/{idx}")
-    public ResponseEntity<?> co2UpdateReserve(@PathVariable Long idx, @RequestBody Co2RequestDto co2RequestDto) {
+    public ResponseEntity<?> co2UpdateReserve(@PathVariable Long idx, @Valid @RequestBody Co2RequestDto co2RequestDto) {
         return ResponseEntity.ok(co2Service.co2UpdateReserve(idx, co2RequestDto));
     }
 

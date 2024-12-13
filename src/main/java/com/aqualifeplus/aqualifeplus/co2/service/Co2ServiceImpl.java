@@ -39,7 +39,7 @@ public class Co2ServiceImpl implements Co2Service {
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
         Fishbowl fishbowl = fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_NEW_FISHBOWL_ID_USE_THIS_USER_ID));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID));
         List<Co2> Co2List = co2Repository
                 .findAllByFishbowlAndUsers(fishbowl, users);
 
@@ -65,11 +65,11 @@ public class Co2ServiceImpl implements Co2Service {
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
         Fishbowl fishbowl = fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_NEW_FISHBOWL_ID_USE_THIS_USER_ID));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID));
 
         Co2 saveCo2 = co2Repository.save(
                 Co2.builder()
-                        .co2ReserveState(co2RequestDto.isCo2ReserveState())
+                        .co2ReserveState(co2RequestDto.getCo2ReserveState())
                         .co2StartTime(co2RequestDto.getCo2StartTime())
                         .co2EndTime(co2RequestDto.getCo2EndTime())
                         .users(users)
@@ -78,11 +78,11 @@ public class Co2ServiceImpl implements Co2Service {
         );
 
         if (saveCo2.isCo2ReserveState()) {
-            fishbowlSettingRedis.createCo2LightReserveInRedis(
+            fishbowlSettingRedis.createReserveInRedis(
                     redisReserveCommonService.makeKey(users, fishbowl, saveCo2.getId(), "co2", "on"),
                     redisReserveCommonService.getExpirationTime(saveCo2.getCo2StartTime(), LocalTime.now())
             );
-            fishbowlSettingRedis.createCo2LightReserveInRedis(
+            fishbowlSettingRedis.createReserveInRedis(
                     redisReserveCommonService.makeKey(users, fishbowl, saveCo2.getId(), "co2", "off"),
                     redisReserveCommonService.getExpirationTime(saveCo2.getCo2EndTime(), LocalTime.now())
             );
@@ -104,7 +104,7 @@ public class Co2ServiceImpl implements Co2Service {
         Co2 targetCo2 = co2Repository.findByIdAndUsers(idx, users)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CO2_RESERVE));
 
-        targetCo2.setCo2ReserveState(co2RequestDto.isCo2ReserveState());
+        targetCo2.setCo2ReserveState(co2RequestDto.getCo2ReserveState());
         targetCo2.setCo2StartTime(co2RequestDto.getCo2StartTime());
         targetCo2.setCo2EndTime(co2RequestDto.getCo2EndTime());
 
@@ -126,17 +126,16 @@ public class Co2ServiceImpl implements Co2Service {
 
         switch (redisReserveCommonService.checkUpdateStateANDIsExistsKeys(
                 targetCo2.isCo2ReserveState(),
-                fishbowlSettingRedis.isExists(onKey) && fishbowlSettingRedis.isExists(offKey))
-        ) {
+                fishbowlSettingRedis.isExists(onKey) && fishbowlSettingRedis.isExists(offKey))) {
             case UPDATE_STATE_TRUE_IS_EXIST_TRUE -> {
-                fishbowlSettingRedis.updateCo2LightReserveInRedis(onKey, getStartExpirationTime);
-                fishbowlSettingRedis.updateCo2LightReserveInRedis(offKey, getEndExpirationTime);
+                fishbowlSettingRedis.updateReserveInRedis(onKey, getStartExpirationTime);
+                fishbowlSettingRedis.updateReserveInRedis(offKey, getEndExpirationTime);
             }
             case UPDATE_STATE_TRUE_IS_EXIST_FALSE -> {
-                fishbowlSettingRedis.createCo2LightReserveInRedis(onKey, getStartExpirationTime);
-                fishbowlSettingRedis.createCo2LightReserveInRedis(offKey, getEndExpirationTime);
+                fishbowlSettingRedis.createReserveInRedis(onKey, getStartExpirationTime);
+                fishbowlSettingRedis.createReserveInRedis(offKey, getEndExpirationTime);
             }
-            case UPDATE_STATE_FALSE_IS_EXIST_TRUE -> fishbowlSettingRedis.deleteCo2LightReserveInRedis(pattern);
+            case UPDATE_STATE_FALSE_IS_EXIST_TRUE -> fishbowlSettingRedis.deleteReserveUsePatternInRedis(pattern);
             default -> log.info("변경된 값과 현재 값 모두 설정이 false입니다.");
         }
 
@@ -157,7 +156,7 @@ public class Co2ServiceImpl implements Co2Service {
 
         String pattern = users.getUserId() + "/*/" + "co2" + "/" + idx + "/*";
 
-        fishbowlSettingRedis.deleteCo2LightReserveInRedis(pattern);
+        fishbowlSettingRedis.deleteReserveUsePatternInRedis(pattern);
 
         return DeleteCo2SuccessDto.builder()
                 .success(true)

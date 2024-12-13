@@ -2,6 +2,7 @@ package com.aqualifeplus.aqualifeplus.light.controller;
 
 import com.aqualifeplus.aqualifeplus.light.dto.LightRequestDto;
 import com.aqualifeplus.aqualifeplus.light.service.LightService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +28,7 @@ public class LightController {
     }
 
     @PostMapping("/reserve")
-    public ResponseEntity<?> lightCreateReserve(@RequestBody LightRequestDto lightRequestDto) {
+    public ResponseEntity<?> lightCreateReserve(@Valid  @RequestBody LightRequestDto lightRequestDto) {
         return ResponseEntity.ok(lightService.lightCreateReserve(lightRequestDto));
     }
 
@@ -37,7 +38,7 @@ public class LightController {
     }
 
     @PutMapping("/reserve/{idx}")
-    public ResponseEntity<?> lightUpdateReserve(@PathVariable Long idx, @RequestBody LightRequestDto lightRequestDto) {
+    public ResponseEntity<?> lightUpdateReserve(@PathVariable Long idx, @Valid @RequestBody LightRequestDto lightRequestDto) {
         return ResponseEntity.ok(lightService.lightUpdateReserve(idx, lightRequestDto));
     }
 

@@ -6,6 +6,8 @@ import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
 import com.aqualifeplus.aqualifeplus.common.redis.FishbowlSettingRedis;
 import com.aqualifeplus.aqualifeplus.config.FirebaseConfig;
+import com.aqualifeplus.aqualifeplus.filter.entity.Filter;
+import com.aqualifeplus.aqualifeplus.filter.repository.FilterRepository;
 import com.aqualifeplus.aqualifeplus.fishbowl.dto.ConnectDto;
 import com.aqualifeplus.aqualifeplus.fishbowl.entity.Fishbowl;
 import com.aqualifeplus.aqualifeplus.firebase.entity.FishbowlData;
@@ -15,6 +17,7 @@ import com.aqualifeplus.aqualifeplus.light.repository.LightRepository;
 import com.aqualifeplus.aqualifeplus.users.dto.SuccessDto;
 import com.aqualifeplus.aqualifeplus.users.entity.Users;
 import com.aqualifeplus.aqualifeplus.users.repository.UsersRepository;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +47,7 @@ public class FishbowlServiceImpl implements FishbowlService {
     private final Co2Repository co2Repository;
     private final LightRepository lightRepository;
     private final FirebaseHttpRepository firebaseHttpRepository;
+    private final FilterRepository filterRepository;
 
     @Override
     @Transactional
@@ -75,6 +79,7 @@ public class FishbowlServiceImpl implements FishbowlService {
             }
         }
 
+        deleteFishbowl(deleteFishbowlList);
         //저장된 list값으로 삭제
         fishbowlRepository.deleteByFishbowlIdIn(deleteFishbowlList);
 
@@ -87,6 +92,13 @@ public class FishbowlServiceImpl implements FishbowlService {
         firebaseHttpRepository.createFirebaseData(
                 FishbowlData.makeFrame(), users.getUserId() + "/" + createFishbowlId, accessToken);
         fishbowlRepository.save(fishbowl);
+        filterRepository.save(Filter.builder()
+                .users(users)
+                .fishbowl(fishbowl)
+                .filterDay("0000000")
+                .filterRange(0)
+                .filterTime(LocalTime.parse("00:00"))
+                .build());
 
         //그리고 이름 생성을 위한 fishbowlid를 redis에 저장
         redisTemplateForTokens.opsForValue().set(
@@ -110,7 +122,7 @@ public class FishbowlServiceImpl implements FishbowlService {
 
         //null 처리 필요
         if (fishbowlId == null) {
-            throw new CustomException(ErrorCode.NOT_FOUND_NEW_FISHBOWL_ID_USE_THIS_USER_ID);
+            throw new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID);
         }
 
         Map<String, String> maps = new HashMap<>();
@@ -131,7 +143,7 @@ public class FishbowlServiceImpl implements FishbowlService {
         String fishbowlToken = jwtService.getFishbowlToken();
 
         if (fishbowlToken == null) {
-            throw new CustomException(ErrorCode.NOT_FOUND_NEW_FISHBOWL_ID_USE_THIS_USER_ID);
+            throw new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID);
         }
 
         Map<String, String> maps = new HashMap<>();
@@ -151,7 +163,7 @@ public class FishbowlServiceImpl implements FishbowlService {
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
         Fishbowl fishbowl = fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
-                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_NEW_FISHBOWL_ID_USE_THIS_USER_ID));
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID));
 
         //firebase에서 어항삭제
         firebaseHttpRepository.deleteFirebaseData(
@@ -159,16 +171,45 @@ public class FishbowlServiceImpl implements FishbowlService {
         //rdbms에서 관련 값 다 삭제
         co2Repository.deleteAllByFishbowl(fishbowl);
         lightRepository.deleteAllByFishbowl(fishbowl);
+        filterRepository.deleteByUsersAndFishbowl(users, fishbowl);
         //filter repo 삭제
         fishbowlRepository.deleteByFishbowlId(fishbowl.getFishbowlId());
 
         //redis에서 관련 값 다 삭제
-        fishbowlSettingRedis.deleteCo2LightReserveInRedis(
-                users.getUserId() + "/"+ fishbowl.getFishbowlId() +"/*/*/*");
+        fishbowlSettingRedis.deleteReserveUsePatternInRedis
+                (users.getUserId() + "/" + fishbowl.getFishbowlId() + "/*/*/*");
 
         return SuccessDto.builder()
                 .success(true)
                 .build();
+    }
+
+    @Transactional
+    protected void deleteFishbowl(List<String> deleteList) {
+        String accessToken = firebaseConfig.getAccessToken();
+        Users users = usersRepository.findByEmail(jwtService.getEmail())
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+        List<Fishbowl> fishbowlList = new ArrayList<>();
+        for (String fishbowlId : deleteList) {
+            fishbowlList.add(fishbowlRepository.findByFishbowlIdAndUsers(fishbowlId, users)
+                    .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID)));
+        }
+
+        //rdbms에서 관련 값 다 삭제
+        co2Repository.deleteAllByFishbowlIn(fishbowlList);
+        lightRepository.deleteAllByFishbowlIn(fishbowlList);
+        filterRepository.deleteAllByFishbowlIn(fishbowlList);
+        //filter repo 삭제
+        fishbowlRepository.deleteByFishbowlIdIn(
+                fishbowlList.stream()
+                        .map(Fishbowl::getFishbowlId)
+                        .toList());
+
+        //redis에서 관련 값 다 삭제
+        for (Fishbowl fishbowl : fishbowlList) {
+            fishbowlSettingRedis.deleteReserveUsePatternInRedis(
+                    users.getUserId() + "/" + fishbowl.getFishbowlId() + "/*/*/*");
+        }
     }
 
     private String createUUID() {

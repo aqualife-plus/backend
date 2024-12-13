@@ -14,5 +14,8 @@ public interface LightRepository extends JpaRepository<Light, Long> {
     Optional<Light> findByIdAndUsers(Long id, Users users);
 
     void deleteByIdAndUsers(long id, Users users);
+
+    void deleteAllByFishbowlIn(List<Fishbowl> fishbowlList);
+
     void deleteAllByFishbowl(Fishbowl fishbowl);
 }

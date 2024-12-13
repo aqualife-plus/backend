@@ -2,6 +2,7 @@ package com.aqualifeplus.aqualifeplus.fishbowl.controller;
 
 import com.aqualifeplus.aqualifeplus.fishbowl.dto.FishbowlNameDto;
 import com.aqualifeplus.aqualifeplus.fishbowl.service.FishbowlService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -24,12 +25,12 @@ public class FishbowlController {
     }
 
     @PostMapping("/name")
-    public ResponseEntity<?> createFishbowlName(@RequestBody FishbowlNameDto fishbowlNameDto) {
+    public ResponseEntity<?> createFishbowlName(@Valid @RequestBody FishbowlNameDto fishbowlNameDto) {
         return ResponseEntity.ok(fishbowlService.createFishbowlName(fishbowlNameDto.getName()));
     }
 
     @PatchMapping("/name")
-    public ResponseEntity<?> updateFishbowlName(@RequestBody FishbowlNameDto fishbowlNameDto) {
+    public ResponseEntity<?> updateFishbowlName(@Valid @RequestBody FishbowlNameDto fishbowlNameDto) {
         return ResponseEntity.ok(fishbowlService.updateFishbowlName(fishbowlNameDto.getName()));
     }
 

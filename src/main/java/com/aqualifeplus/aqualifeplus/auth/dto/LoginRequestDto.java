@@ -2,6 +2,7 @@ package com.aqualifeplus.aqualifeplus.auth.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,8 +12,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class LoginRequestDto {
     @Email(message = "Please enter it in email format")
-    @NotEmpty(message = "Please enter email")
+    @NotNull(message = "Please enter email")
     private String email;
-    @NotEmpty(message = "Please enter password")
+    @NotNull(message = "Please enter password")
     private String password;
 }

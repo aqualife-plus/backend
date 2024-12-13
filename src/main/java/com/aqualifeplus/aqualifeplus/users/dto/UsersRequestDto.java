@@ -3,6 +3,8 @@ package com.aqualifeplus.aqualifeplus.users.dto;
 import com.aqualifeplus.aqualifeplus.users.entity.Users;
 import com.aqualifeplus.aqualifeplus.common.enum_type.LoginPlatform;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
@@ -31,6 +33,7 @@ public class UsersRequestDto {
     @Pattern(regexp = "^$|^[0-9]{11}$", message = "Please enter 11 digits or leave it blank")
     private String phoneNumber;
 
+    @Enumerated(EnumType.STRING)
     private LoginPlatform accountType;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
