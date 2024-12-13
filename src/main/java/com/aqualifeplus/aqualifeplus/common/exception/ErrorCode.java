@@ -2,7 +2,6 @@ package com.aqualifeplus.aqualifeplus.common.exception;
 
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 
 @Getter
 public enum ErrorCode {
@@ -19,10 +18,11 @@ public enum ErrorCode {
     NOT_MATCH_NUMBER_FORMAT("숫자 형식이 아닙니다.", HttpStatus.BAD_REQUEST),
     NOT_MATCH_UUID_FORMAT("UUID 형식이 아닙니다.", HttpStatus.BAD_REQUEST),
     FAIL_UPDATE_NAME("어항의 이름을 수정하지 못했습니다.", HttpStatus.BAD_REQUEST),
-    NOT_FOUND_NEW_FISHBOWL_ID_USE_THIS_USER_ID("해당 유저가 만든 어항이 존재하지 않습니다.", HttpStatus.NOT_FOUND),
+    NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID("해당 유저가 만든 어항이 존재하지 않습니다.", HttpStatus.NOT_FOUND),
     NOT_MATCH_UPDATE_COLUMN("원하는 컬럼값이 들어오지않았습니다.", HttpStatus.BAD_REQUEST),
     NOT_FOUND_LIGHT_RESERVE("해당 데이터로 Light 예약이 없습니다.", HttpStatus.NOT_FOUND),
     NOT_FOUND_CO2_RESERVE("해당 데이터로 Co2 예약이 없습니다.", HttpStatus.NOT_FOUND),
+    NOT_FOUND_FILTER("해당 Filter가 없습니다.", HttpStatus.NOT_FOUND),
 
     DISCONNECTED_FIREBASE_SERVER("firebase와 연결이 끊겼습니다.", HttpStatus.SERVICE_UNAVAILABLE),
     PERMISSION_DENIED_FIREBASE_SERVER("firebase와 연결이 허용되지 않습니다.", HttpStatus.BAD_GATEWAY),
@@ -32,6 +32,7 @@ public enum ErrorCode {
     FAIL_FIREBASE_SAVE("firebase에 데이터를 보내지 못했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
     FAIL_UPDATE_NOW_CO2("실시간 co2에 데이터를 저장하지 못했습니다.", HttpStatus.BAD_REQUEST),
     FAIL_UPDATE_NOW_LIGHT("실시간 light에 데이터를 저장하지 못했습니다.", HttpStatus.BAD_REQUEST),
+    FAIL_UPDATE_NOW_FILTER("실시간 filter에 데이터를 저장하지 못했습니다.", HttpStatus.BAD_REQUEST),
     NOT_MATCH_NOW_DATA_FORMAT("정해진 형식이 아닙니다.",HttpStatus.BAD_REQUEST),
 
     RABBITMQ_BASIC_REJECT_ERROR("메세지 삭제에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);

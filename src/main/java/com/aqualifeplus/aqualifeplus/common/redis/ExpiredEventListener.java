@@ -21,7 +21,7 @@ public class ExpiredEventListener implements MessageListener {
     @Override
     public void onMessage(Message message, byte[] pattern) {
         String expiredKey = message.toString();
-        System.out.println("Expired key detected: " + expiredKey);
+        log.info("Expired key detected: " + expiredKey);
 
         // 비즈니스 로직 실행
         handleExpiredKey(expiredKey);
@@ -30,7 +30,7 @@ public class ExpiredEventListener implements MessageListener {
     private void handleExpiredKey(String key) {
         //여기서 key의 값에 따라서 메소드 분리, 만료시간 지정하기
         if (key.contains("filter")) {
-            System.out.println("filter입니다.");
+            updateFilterUseReserve(key);
         } else if (key.contains("co2")) {
             updateOnOffUseReserve(key, "co2State");
         } else if (key.contains("light")) {
@@ -40,10 +40,17 @@ public class ExpiredEventListener implements MessageListener {
         }
     }
 
-    private void updateOnOffUseReserve(String key, String co2State) {
+    private void updateOnOffUseReserve(String key, String type) {
         String[] strArr = key.split("/");
         firebaseRealTimeRepository.updateOnOff(
-                strArr[0], strArr[1], co2State, strArr[4].equals("on"));
+                strArr[0], strArr[1], type, strArr[4].equals("on"));
+        redisTemplateForFishbowlSettings.opsForValue().set(key, "", ADAY, TimeUnit.SECONDS);
+        log.info(String.valueOf(redisTemplateForFishbowlSettings.getExpire(key, TimeUnit.SECONDS)));
+    }
+
+    private void updateFilterUseReserve(String key) {
+        String[] strArr = key.split("/");
+        firebaseRealTimeRepository.updateFilter(strArr[0], strArr[1]);
         redisTemplateForFishbowlSettings.opsForValue().set(key, "", ADAY, TimeUnit.SECONDS);
         log.info(String.valueOf(redisTemplateForFishbowlSettings.getExpire(key, TimeUnit.SECONDS)));
     }

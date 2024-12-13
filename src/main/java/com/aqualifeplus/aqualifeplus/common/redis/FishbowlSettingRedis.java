@@ -14,7 +14,7 @@ public class FishbowlSettingRedis {
     private final RedisTemplate<String, String> redisTemplateForFishbowlSettings;
 
 
-    public void createCo2LightReserveInRedis(String key, int expirationTime) {
+    public void createReserveInRedis(String key, int expirationTime) {
         redisTemplateForFishbowlSettings
                 .opsForValue()
                 .set(key, "", expirationTime, TimeUnit.SECONDS);
@@ -23,7 +23,7 @@ public class FishbowlSettingRedis {
                         key, TimeUnit.SECONDS)));
     }
 
-    public void updateCo2LightReserveInRedis(String key, int expirationTime) {
+    public void updateReserveInRedis(String key, int expirationTime) {
         if (isExists(key)) {
             redisTemplateForFishbowlSettings.expire(key, expirationTime, TimeUnit.SECONDS);
             log.info(String.valueOf(redisTemplateForFishbowlSettings.getExpire(key, TimeUnit.SECONDS)));
@@ -34,7 +34,7 @@ public class FishbowlSettingRedis {
     }
 
 
-    public void deleteCo2LightReserveInRedis(String pattern) {
+    public void deleteReserveUsePatternInRedis(String pattern) {
         Set<String> keys = redisTemplateForFishbowlSettings.keys(pattern);
 
         if (keys != null && !keys.isEmpty()) {
@@ -48,4 +48,5 @@ public class FishbowlSettingRedis {
     public boolean isExists(String key) {
         return Boolean.TRUE.equals(redisTemplateForFishbowlSettings.hasKey(key));
     }
+
 }

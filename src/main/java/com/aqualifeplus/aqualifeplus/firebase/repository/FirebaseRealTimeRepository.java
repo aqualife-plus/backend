@@ -30,8 +30,23 @@ public class FirebaseRealTimeRepository {
         userRef.setValue(onOff, (error, databaseReference) -> {
             if (error != null && type.equals("co2State")) {
                 throw new CustomException(ErrorCode.FAIL_UPDATE_NOW_CO2);
-            } else if (error != null){
+            } else if (error != null) {
                 throw new CustomException(ErrorCode.FAIL_UPDATE_NOW_LIGHT);
+            }
+        });
+    }
+
+    public void updateFilter(String userId, String fishbowlId) {
+        DatabaseReference userRef =
+                FirebaseDatabase.getInstance()
+                        .getReference(userId)
+                        .child(fishbowlId)
+                        .child("filterData")
+                        .child("filterOnOff");
+
+        userRef.setValue(true, (error, databaseReference) -> {
+            if (error != null) {
+                throw new CustomException(ErrorCode.FAIL_UPDATE_NOW_FILTER);
             }
         });
     }

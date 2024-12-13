@@ -44,8 +44,4 @@ public class RedisReserveCommonService {
             return UPDATE_STATE_FALSE_IS_EXIST_FALSE;
         }
     }
-
-    public void deleteAllRedisData() {
-
-    }
 }
