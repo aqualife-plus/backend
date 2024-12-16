@@ -24,7 +24,6 @@ public class FishbowlData {
     public static FishbowlData makeFrame() {
         return FishbowlData.builder()
                 .name("이름을 정해주세요!")
-                .deviceToken("기기가 정해지지 않았습니다.")
                 .now(Now.startNowData())
                 .filterData(FilterData.startFilterData())
                 .ph(Ph.startPhData())

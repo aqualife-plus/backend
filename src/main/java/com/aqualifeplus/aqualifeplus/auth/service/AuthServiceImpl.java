@@ -84,7 +84,7 @@ public class AuthServiceImpl implements AuthService{
         if (firebaseData != null) {
             //여기서 이름이 설정안된 친구만 찾고 firebase에서 삭제 + 해당 fishbowlId를 list에 저장
             for (Map.Entry<String, Map<String, Object>> entry : firebaseData.entrySet()) {
-                Map<String, Object> fishbowlData = entry.getValue();
+                Map<String, Object> fishbowlData = (Map<String, Object>) entry.getValue().get("device");
 
                 Map<String, String> maps = new HashMap<>();
                 maps.put("deviceToken",
@@ -93,7 +93,7 @@ public class AuthServiceImpl implements AuthService{
 
                 if (fishbowlData.containsKey("deviceToken")) {
                     firebaseHttpRepository.updateFirebaseData(maps,
-                            users.getUserId() + "/" + entry.getKey(),
+                            users.getUserId() + "/" + entry.getKey() + "/" + "device",
                             accessToken);
                 }
             }

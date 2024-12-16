@@ -12,11 +12,13 @@ import lombok.NoArgsConstructor;
 public class Device {
     private boolean warning;
     private boolean onOff;
+    private String deviceToken;
 
     public static Device startDeviceData() {
         return Device.builder()
                 .warning(false)
                 .onOff(false)
+                .deviceToken("no token")
                 .build();
     }
 }
