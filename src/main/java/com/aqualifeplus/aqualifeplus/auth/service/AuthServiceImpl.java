@@ -1,6 +1,8 @@
 package com.aqualifeplus.aqualifeplus.auth.service;
 
+import com.aqualifeplus.aqualifeplus.auth.dto.AndroidRequestDto;
 import com.aqualifeplus.aqualifeplus.auth.dto.LoginRequestDto;
+import com.aqualifeplus.aqualifeplus.auth.dto.SuccessDto;
 import com.aqualifeplus.aqualifeplus.auth.dto.TokenResponseDto;
 import com.aqualifeplus.aqualifeplus.auth.jwt.JwtService;
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
@@ -56,5 +58,16 @@ public class AuthServiceImpl implements AuthService{
         } else {
             throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
+    }
+
+    @Override
+    public SuccessDto setAndroidToken(AndroidRequestDto androidRequestDto) {
+        String authData = jwtService.getAuthorization();
+        String email = jwtService.extractEmail(authData);
+        redisTemplateForTokens.opsForValue()
+                .set("users : android token : " + email, androidRequestDto.getToken());
+        return SuccessDto.builder()
+                .success(true)
+                .build();
     }
 }

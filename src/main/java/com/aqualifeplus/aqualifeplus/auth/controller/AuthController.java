@@ -1,5 +1,6 @@
 package com.aqualifeplus.aqualifeplus.auth.controller;
 
+import com.aqualifeplus.aqualifeplus.auth.dto.AndroidRequestDto;
 import com.aqualifeplus.aqualifeplus.auth.dto.LoginRequestDto;
 import com.aqualifeplus.aqualifeplus.auth.service.AuthService;
 import jakarta.validation.Valid;
@@ -31,6 +32,11 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDto loginRequestDto) {
         return ResponseEntity.ok(authService.login(loginRequestDto));
+    }
+
+    @PostMapping("/android-token")
+    public ResponseEntity<?> androidToken(@Valid @RequestBody AndroidRequestDto androidRequestDto) {
+        return ResponseEntity.ok(authService.setAndroidToken(androidRequestDto));
     }
 
     @PostMapping("/refresh-token")
