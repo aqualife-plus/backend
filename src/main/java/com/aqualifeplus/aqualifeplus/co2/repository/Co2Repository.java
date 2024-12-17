@@ -10,10 +10,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface Co2Repository extends JpaRepository<Co2, Long> {
-    List<Co2> findAllByFishbowlAndUsers(Fishbowl fishbowl, Users users);
-    Optional<Co2> findByIdAndUsers(Long id, Users users);
-
-    void deleteByIdAndUsers(long id, Users users);
+    List<Co2> findAllByFishbowl(Fishbowl fishbowl);
 
     void deleteAllByFishbowlIn(List<Fishbowl> fishbowlList);
 

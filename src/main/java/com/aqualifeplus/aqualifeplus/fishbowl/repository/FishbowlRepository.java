@@ -15,4 +15,6 @@ public interface FishbowlRepository extends JpaRepository<Fishbowl, Long> {
     Optional<Fishbowl> findByFishbowlIdAndUsers(String fishbowlToken, Users users);
 
     void deleteByFishbowlId(String fishbowlId);
+
+    Optional<Fishbowl> findByFishbowlId(String createFishbowlId);
 }

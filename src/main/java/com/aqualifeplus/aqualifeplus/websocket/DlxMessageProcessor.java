@@ -29,9 +29,6 @@ public class DlxMessageProcessor {
     // DLX 큐에서 메시지 수신 후 원래 큐로 다시 전송
     @RabbitListener(queues = "deadLetterQueue")
     public void processDlxMessage(Message message) throws IOException {
-        System.out.println(getMessageCount("deadLetterQueue"));
-        System.out.println(getMessageCount("websocketMessageQueue"));
-
         String messageContent = new String(message.getBody());
         log.info("Processing DLX message: " + messageContent);
 
@@ -80,24 +77,13 @@ public class DlxMessageProcessor {
             String type = matcher.group(1);
             String messages = matcher.group(2);
 
-            System.out.println((type.equals("co2State") || type.equals("lightState"))
-                    && (messages.equals("true") || messages.equals("false")));
+            log.info(String.valueOf((type.equals("co2State") || type.equals("lightState"))
+                    && (messages.equals("true") || messages.equals("false"))));
 
             return (type.equals("co2State") || type.equals("lightState"))
                     && (messages.equals("true") || messages.equals("false"));
         }
 
         return false;
-    }
-
-    public int getMessageCount(String queueName) {
-        return rabbitTemplate.execute(channel -> {
-            try {
-                // 큐 상태 확인
-                return (int) channel.messageCount(queueName);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to get message count from RabbitMQ", e);
-            }
-        });
     }
 }

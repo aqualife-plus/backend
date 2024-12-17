@@ -33,8 +33,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     "/auth/naver/login", "/oauth2/authorization/naver/**",
                     "/users/check-email");
 
-
-
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException{
         // 로그인, 회원가입 API URL이 포함되는지 확인하는 함수

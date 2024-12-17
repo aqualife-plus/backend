@@ -24,8 +24,6 @@ public class Co2 {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @ManyToOne
-    private Users users;
-    @ManyToOne
     private Fishbowl fishbowl;
 
     private boolean co2ReserveState;

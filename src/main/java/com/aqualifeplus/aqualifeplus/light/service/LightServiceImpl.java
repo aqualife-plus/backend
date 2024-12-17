@@ -41,7 +41,7 @@ public class LightServiceImpl implements LightService {
         Fishbowl fishbowl = fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID));
         List<Light> lightList = lightRepository
-                .findAllByFishbowlAndUsers(fishbowl, users);
+                .findAllByFishbowl(fishbowl);
 
         return lightList.stream()
                 .map(LightResponseDto::toResponseDto)
@@ -53,7 +53,7 @@ public class LightServiceImpl implements LightService {
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
-        Light light = lightRepository.findByIdAndUsers(idx, users)
+        Light light = lightRepository.findById(idx)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_LIGHT_RESERVE));
 
         return LightResponseDto.toResponseDto(light);
@@ -72,7 +72,6 @@ public class LightServiceImpl implements LightService {
                         .lightReserveState(lightRequestDto.isLightReserveState())
                         .lightStartTime(lightRequestDto.getLightStartTime())
                         .lightEndTime(lightRequestDto.getLightEndTime())
-                        .users(users)
                         .fishbowl(fishbowl)
                         .build()
         );
@@ -101,7 +100,7 @@ public class LightServiceImpl implements LightService {
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
-        Light targetLight = lightRepository.findByIdAndUsers(idx, users)
+        Light targetLight = lightRepository.findById(idx)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_LIGHT_RESERVE));
 
         targetLight.setLightReserveState(lightRequestDto.isLightReserveState());
@@ -153,7 +152,7 @@ public class LightServiceImpl implements LightService {
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
-        lightRepository.deleteByIdAndUsers(idx, users);
+        lightRepository.deleteById(idx);
 
         String pattern = users.getUserId() + "/*/" + "light" + "/" + idx + "/*";
 

@@ -10,10 +10,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface LightRepository extends JpaRepository<Light, Long> {
-    List<Light> findAllByFishbowlAndUsers(Fishbowl fishbowl, Users users);
-    Optional<Light> findByIdAndUsers(Long id, Users users);
-
-    void deleteByIdAndUsers(long id, Users users);
+    List<Light> findAllByFishbowl(Fishbowl fishbowl);
 
     void deleteAllByFishbowlIn(List<Fishbowl> fishbowlList);
 

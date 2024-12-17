@@ -19,6 +19,11 @@ public class FirebaseHttpRepository {
                 .headers(headers -> headers.setBearerAuth(accessToken)) // Authorization 헤더 추가
                 .bodyValue(value) // Body에 저장할 데이터 설정
                 .retrieve()
+                .onStatus(
+                        status -> status.is4xxClientError() || status.is5xxServerError(), // 상태 코드 체크
+                        clientResponse -> clientResponse.bodyToMono(String.class)
+                                .map(body -> new RuntimeException("Error response: " + body))
+                )
                 .toBodilessEntity()
                 .block();
     }

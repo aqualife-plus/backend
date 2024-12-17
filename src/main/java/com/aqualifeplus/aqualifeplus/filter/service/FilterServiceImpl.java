@@ -50,7 +50,7 @@ public class FilterServiceImpl implements FilterService {
         Fishbowl fishbowl =
                 fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
                         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID));
-        Filter filter = filterRepository.findByUsersAndFishbowl(users, fishbowl)
+        Filter filter = filterRepository.findByFishbowl(fishbowl)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FILTER));
 
         return FilterResponseDto.builder()
@@ -69,7 +69,7 @@ public class FilterServiceImpl implements FilterService {
         Fishbowl fishbowl =
                 fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
                         .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID));
-        Filter filter = filterRepository.findByUsersAndFishbowl(users, fishbowl)
+        Filter filter = filterRepository.findByFishbowl(fishbowl)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FILTER));
         filter.setFilterDay(filterRequestDto.getFilterDay());
         filter.setFilterRange(filterRequestDto.getFilterRange());

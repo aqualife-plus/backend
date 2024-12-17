@@ -40,8 +40,7 @@ public class Co2ServiceImpl implements Co2Service {
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
         Fishbowl fishbowl = fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID));
-        List<Co2> Co2List = co2Repository
-                .findAllByFishbowlAndUsers(fishbowl, users);
+        List<Co2> Co2List = co2Repository.findAllByFishbowl(fishbowl);
 
         return Co2List.stream()
                 .map(Co2ResponseDto::toResponseDto)
@@ -53,7 +52,7 @@ public class Co2ServiceImpl implements Co2Service {
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
-        Co2 co2 = co2Repository.findByIdAndUsers(idx, users)
+        Co2 co2 = co2Repository.findById(idx)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CO2_RESERVE));
 
         return Co2ResponseDto.toResponseDto(co2);
@@ -72,7 +71,6 @@ public class Co2ServiceImpl implements Co2Service {
                         .co2ReserveState(co2RequestDto.getCo2ReserveState())
                         .co2StartTime(co2RequestDto.getCo2StartTime())
                         .co2EndTime(co2RequestDto.getCo2EndTime())
-                        .users(users)
                         .fishbowl(fishbowl)
                         .build()
         );
@@ -101,7 +99,7 @@ public class Co2ServiceImpl implements Co2Service {
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
-        Co2 targetCo2 = co2Repository.findByIdAndUsers(idx, users)
+        Co2 targetCo2 = co2Repository.findById(idx)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CO2_RESERVE));
 
         targetCo2.setCo2ReserveState(co2RequestDto.getCo2ReserveState());
@@ -152,7 +150,7 @@ public class Co2ServiceImpl implements Co2Service {
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
-        co2Repository.deleteByIdAndUsers(idx, users);
+        co2Repository.deleteById(idx);
 
         String pattern = users.getUserId() + "/*/" + "co2" + "/" + idx + "/*";
 

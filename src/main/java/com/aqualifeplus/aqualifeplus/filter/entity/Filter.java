@@ -24,8 +24,6 @@ public class Filter {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @ManyToOne
-    private Users users;
-    @ManyToOne
     private Fishbowl fishbowl;
     private String filterDay; // "7x4" or "0/1"
     private int filterRange;  // Range 1-4

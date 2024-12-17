@@ -57,6 +57,11 @@ public class FishbowlServiceImpl implements FishbowlService {
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
         String createFishbowlId = createUUID();
+
+        while (fishbowlRepository.findByFishbowlId(createFishbowlId).isPresent()) {
+            createFishbowlId = createUUID();
+        }
+
         List<String> deleteFishbowlList = new ArrayList<>();
 
         //firebase에서 userId에 모든 어항 가져오기
@@ -93,7 +98,6 @@ public class FishbowlServiceImpl implements FishbowlService {
                 FishbowlData.makeFrame(), users.getUserId() + "/" + createFishbowlId, accessToken);
         fishbowlRepository.save(fishbowl);
         filterRepository.save(Filter.builder()
-                .users(users)
                 .fishbowl(fishbowl)
                 .filterDay("0000000")
                 .filterRange(0)
@@ -171,7 +175,7 @@ public class FishbowlServiceImpl implements FishbowlService {
         //rdbms에서 관련 값 다 삭제
         co2Repository.deleteAllByFishbowl(fishbowl);
         lightRepository.deleteAllByFishbowl(fishbowl);
-        filterRepository.deleteByUsersAndFishbowl(users, fishbowl);
+        filterRepository.deleteByFishbowl(fishbowl);
         //filter repo 삭제
         fishbowlRepository.deleteByFishbowlId(fishbowl.getFishbowlId());
 
