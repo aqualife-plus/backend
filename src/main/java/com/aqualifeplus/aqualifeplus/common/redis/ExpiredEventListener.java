@@ -51,7 +51,7 @@ public class ExpiredEventListener implements MessageListener {
     private void updateFilterUseReserve(String key) {
         String[] strArr = key.split("/");
         firebaseRealTimeRepository.updateFilter(strArr[0], strArr[1]);
-        redisTemplateForFishbowlSettings.opsForValue().set(key, "", ADAY, TimeUnit.SECONDS);
+        redisTemplateForFishbowlSettings.opsForValue().set(key, "", ADAY * 7, TimeUnit.SECONDS);
         log.info(String.valueOf(redisTemplateForFishbowlSettings.getExpire(key, TimeUnit.SECONDS)));
     }
 }

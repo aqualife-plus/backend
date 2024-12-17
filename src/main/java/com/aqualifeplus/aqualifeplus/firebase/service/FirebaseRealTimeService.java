@@ -29,10 +29,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class FirebaseRealTimeService {
     private final ChatHandler webSocketHandler;
+    private final FCMService fcmService;
 
     @Autowired
-    public FirebaseRealTimeService(@Lazy ChatHandler webSocketHandler) {
+    public FirebaseRealTimeService(@Lazy ChatHandler webSocketHandler, FCMService fcmService) {
         this.webSocketHandler = webSocketHandler;
+        this.fcmService = fcmService;
         DatabaseReference database = FirebaseDatabase.getInstance().getReference();
 
         // Firebase에 데이터 변경 시 리스너 추가
@@ -154,27 +156,8 @@ public class FirebaseRealTimeService {
             }
 
             if (!message.isEmpty()) {
-                sendNotification(warningDtoMap.get(key).getDeviceToken(), "warning", message);
+                fcmService.sendNotification(warningDtoMap.get(key).getDeviceToken(), "warning", message);
             }
-        }
-    }
-
-    public void sendNotification(String token, String title, String body) {
-        try {
-            // 메시지 생성
-            Message message = Message.builder()
-                    .setToken(token)
-                    .setNotification(Notification.builder()
-                            .setTitle(title)
-                            .setBody(body)
-                            .build())
-                    .build();
-
-            // 메시지 전송
-            String response = FirebaseMessaging.getInstance().send(message);
-            System.out.println("Successfully sent message: " + response);
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
