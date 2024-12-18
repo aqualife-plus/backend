@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -20,13 +21,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 @Builder
 public class UsersRequestDto {
     @Email(message = "Please enter it in email format")
-    @NotEmpty(message = "Please enter email")
+    @NotBlank(message = "Please enter email")
     private String email;
 
-    @NotEmpty(message = "Please enter password")
+    @NotBlank(message = "Please enter password")
     private String password;
 
-    @NotEmpty(message = "Please enter nickname")
+    @NotBlank(message = "Please enter nickname")
     private String nickname;
 
     @Size(min = 11, max = 11, message = "Please enter exactly 11 digits")

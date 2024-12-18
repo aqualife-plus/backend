@@ -28,7 +28,7 @@ public class UsersController {
     }
 
     @PostMapping("/check-email")
-    public ResponseEntity<?> checkEmail(@RequestBody SignupCheckDto signupCheckDto) {
+    public ResponseEntity<?> checkEmail(@Valid @RequestBody SignupCheckDto signupCheckDto) {
         return ResponseEntity.ok(usersService.checkEmail(signupCheckDto));
     }
 

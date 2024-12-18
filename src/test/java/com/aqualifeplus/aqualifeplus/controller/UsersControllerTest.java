@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -42,9 +43,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
 @Import(SecurityConfig.class)
@@ -130,6 +134,30 @@ class UsersControllerTest {
     }
 
     @Test
+    @DisplayName("회원가입 실패 -> valid error")
+    void failSignup_DtoValidError() throws Exception {
+        // given
+        UsersRequestDto usersRequestDto =
+                UsersRequestDto.builder()
+                        .email("1@1.com")
+                        .password(" ")
+                        .nickname("test nickname")
+                        .phoneNumber(null)
+                        .build();
+        // when
+        // then
+        mockMvc.perform(post("/users/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(usersRequestDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(
+                        MethodArgumentNotValidException.class,
+                        result.getResolvedException()
+                ))
+                .andDo(print());
+    }
+
+    @Test
     @DisplayName("이메일 중복체크 성공")
     void successCheckEmail() throws Exception {
         // given
@@ -140,7 +168,7 @@ class UsersControllerTest {
                 .success(false)
                 .build();
         // when
-        when(usersService.checkEmail(signupCheckDto)).thenReturn(successDto);
+        when(usersService.checkEmail(any(SignupCheckDto.class))).thenReturn(successDto);
         // then
         String responseValue = mockMvc.perform(post("/users/check-email")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -166,7 +194,7 @@ class UsersControllerTest {
                 .success(true)
                 .build();
         // when
-        when(usersService.checkEmail(signupCheckDto)).thenReturn(successDto);
+        when(usersService.checkEmail(any(SignupCheckDto.class))).thenReturn(successDto);
         // then
         String responseValue = mockMvc.perform(post("/users/check-email")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -188,19 +216,17 @@ class UsersControllerTest {
         SignupCheckDto signupCheckDto = SignupCheckDto.builder()
                 .email(null)
                 .build();
+
         // when
-        when(usersService.checkEmail(signupCheckDto))
-                .thenThrow(new CustomException(ErrorCode.NULL_AND_NOT_FORMAT_EMAIL));
         // then
         mockMvc.perform(post("/users/check-email")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(signupCheckDto)))
                 .andExpect(status().isBadRequest())
                 .andExpect(result -> assertInstanceOf(
-                        CustomException.class, result.getResolvedException()))
-                .andExpect(result -> assertEquals(
-                        "값이 없거나 이메일 형식이 아닙니다",
-                        result.getResolvedException().getMessage()))
+                        MethodArgumentNotValidException.class,
+                        result.getResolvedException()
+                ))
                 .andDo(print());
     }
 
@@ -293,7 +319,7 @@ class UsersControllerTest {
         //when
         when(usersService.updateMyInfo(any(UsersResponseDto.class))).thenReturn(successDto);
         //then
-        String responseValue = mockMvc.perform(put("/users/my-info")
+        String responseValue = mockMvc.perform(patch("/users/my-info")
                         .header("Authorization", accessTokenExample)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(afterResponseDto)))
@@ -314,18 +340,20 @@ class UsersControllerTest {
         //given
         String accessTokenExample = "Bearer accessTokenExample";
         UsersResponseDto afterResponseDto = UsersResponseDto.builder()
-                .nickname("")
+                .nickname(" ")
                 .phoneNumber("0101112222")
                 .build();
         //when
         //then
-        mockMvc.perform(put("/users/my-info")
+        mockMvc.perform(patch("/users/my-info")
                         .header("Authorization", accessTokenExample)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(afterResponseDto)))
                 .andExpect(status().isBadRequest())
-                .andExpect(result
-                        -> assertInstanceOf(MethodArgumentNotValidException.class, result.getResolvedException()))
+                .andExpect(result -> assertInstanceOf(
+                        MethodArgumentNotValidException.class,
+                        result.getResolvedException()
+                ))
                 .andDo(print());
     }
 
