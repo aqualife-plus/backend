@@ -7,6 +7,7 @@ import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.firebase.repository.FirebaseRealTimeRepository;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
@@ -17,33 +18,36 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class MessageQueueService {
+    private final RabbitTemplate rabbitTemplate;
 
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
-
-    @Autowired
     @Lazy
-    private FirebaseRealTimeRepository firebaseRealTimeRepository;
+    private final FirebaseRealTimeRepository firebaseRealTimeRepository;
 
-    // 메시지를 RabbitMQ 큐에 송신
+    /**
+     * 메시지를 RabbitMQ 큐에 송신
+     * @param message   큐에 송신할 메세지
+     * */
     public void sendMessageToQueue(String message) {
-        System.out.println("push queue");
+        log.info("push queue");
         MessageProperties messageProperties = new MessageProperties();
-        messageProperties.setDeliveryMode(MessageDeliveryMode.PERSISTENT); // 메시지 지속성 설정
+        // 메시지 지속성 설정
+        messageProperties.setDeliveryMode(MessageDeliveryMode.PERSISTENT);
         Message m = MessageBuilder.withBody(message.getBytes())
                 .andProperties(messageProperties)
                 .build();
 
+        // 메시지가 websocketMessageQueue 큐에 전달
         rabbitTemplate.convertAndSend("websocketMessageQueue", m);
-        System.out.println("Sent persistent message to RabbitMQ: " + message);
+        log.info("Sent persistent message to RabbitMQ: " + message);
     }
 
     /**
-     * RabbitMQ 큐에서 메시지 수신 및 처리
+     * websocketMessageQueue에서 메시지 수신 및 처리
+     * @param message   큐에 수신된 메세지
      */
     @RabbitListener(queues = "websocketMessageQueue")
     public void receiveMessageFromQueue(String message) {
@@ -51,28 +55,44 @@ public class MessageQueueService {
         processMessage(message);
     }
 
+    /**
+     * message를 정규화로 필터링 & firebase로 전송
+     * */
     public void processMessage(String message) {
-        log.info("Received message from queue: " + message);
+        log.info("process message " + message);
 
         try {
-            // 메시지를 ':'로 나눈 후 JSON 부분만 추출
+            // 메시지를 '<>'로 나눈 후 JSON 부분만 추출
             String[] parts = message.split("<>", 3);
-            String sessionPath = parts[1]; // sessionId 등 경로 정보
-            String jsonPayload = parts[2]; // JSON 데이터
+            // 송신할 경로 정보
+            String sessionPath = parts[1];
+            // JSON 데이터
+            String jsonPayload = parts[2];
 
             Pattern pattern = Pattern.compile("Type: (.*?), Message: (.*)");
             Matcher matcher = pattern.matcher(jsonPayload);
 
-            // Firebase 저장
+            // Firebase 경로 str -> 배열
             String[] sessionIdArr = sessionPath.split("/");
 
             if (matcher.find()) {
-                String type = matcher.group(1); // "업데이트"
-                String messages = matcher.group(2); // "ㄱㄱ"
-                firebaseRealTimeRepository.updateOnOff(
-                        sessionIdArr[0], sessionIdArr[1],
-                        type, Boolean.parseBoolean(messages));
-                log.info("Data saved to Firebase successfully.(구현x)");
+                String type = matcher.group(1); // key
+                String messages = matcher.group(2); // value
+
+                switch (type) {
+                    case "co2State", "lightState" ->
+                            firebaseRealTimeRepository.updateOnOff(
+                                    sessionIdArr[0],
+                                    sessionIdArr[1],
+                                    type,
+                                    Boolean.parseBoolean(messages));
+                    case "filter" ->
+                        firebaseRealTimeRepository.updateFilter(
+                                sessionIdArr[0],
+                                sessionIdArr[1]);
+                }
+
+                log.info("Data saved to Firebase successfully.");
             }
         } catch (Exception e) {
             log.error("Error processing message: " + e.getMessage());

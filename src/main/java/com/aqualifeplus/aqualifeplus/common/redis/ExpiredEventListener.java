@@ -6,6 +6,7 @@ import com.aqualifeplus.aqualifeplus.firebase.repository.FirebaseRealTimeReposit
 import com.aqualifeplus.aqualifeplus.firebase.service.FCMService;
 import com.aqualifeplus.aqualifeplus.users.entity.Users;
 import com.aqualifeplus.aqualifeplus.users.repository.UsersRepository;
+import com.aqualifeplus.aqualifeplus.websocket.MessageQueueService;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,9 +23,9 @@ public class ExpiredEventListener implements MessageListener {
 
     private final FCMService fcmService;
     private final UsersRepository usersRepository;
-    private final FirebaseRealTimeRepository firebaseRealTimeRepository;
     private final RedisTemplate<String, String> redisTemplateForFishbowlSettings;
     private final RedisTemplate<String, String> redisTemplateForTokens;
+    private final MessageQueueService messageQueueService;
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
@@ -50,8 +51,10 @@ public class ExpiredEventListener implements MessageListener {
 
     private void updateOnOffUseReserve(String key, String type) {
         String[] strArr = key.split("/");
-        firebaseRealTimeRepository.updateOnOff(
-                strArr[0], strArr[1], type, strArr[4].equals("on"));
+        String path = strArr[0] + "/" + strArr[1];
+        String formattedMessage = "Type: " + type + ", Message: " + strArr[4].equals("on");
+
+        messageQueueService.sendMessageToQueue("" + "<>" + path + "<>" + formattedMessage);
         redisTemplateForFishbowlSettings.opsForValue().set(key, "", ADAY, TimeUnit.SECONDS);
 
         Users users = usersRepository.findById(Long.parseLong(strArr[0]))
@@ -60,14 +63,17 @@ public class ExpiredEventListener implements MessageListener {
         fcmService.sendNotification(
                 redisTemplateForTokens.opsForValue().get("users : androidToken : " + users.getEmail()),
                 type,
-                type + "이 " + strArr[4] + "되었습니다."
-        );
+                type + "이 " + strArr[4] + "되었습니다.");
         log.info(String.valueOf(redisTemplateForFishbowlSettings.getExpire(key, TimeUnit.SECONDS)));
     }
 
     private void updateFilterUseReserve(String key) {
         String[] strArr = key.split("/");
-        firebaseRealTimeRepository.updateFilter(strArr[0], strArr[1]);
+        String path = strArr[0] + "/" + strArr[1];
+        String formattedMessage = "Type: " + "filter" + ", Message: " + strArr[4].equals("on");
+
+        messageQueueService.sendMessageToQueue("" + "<>" + path + "<>" + formattedMessage);
+
         redisTemplateForFishbowlSettings.opsForValue().set(key, "", ADAY * 7, TimeUnit.SECONDS);
 
         Users users = usersRepository.findById(Long.parseLong(strArr[0]))

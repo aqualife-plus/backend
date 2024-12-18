@@ -12,6 +12,11 @@ import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+/**
+ * Redis의 전반적인 설정을 다루는 클래스
+ * redisTemplateForTokens : token관련 메소드
+ * redisTemplateForFishbowlSettings : 예약관련 메소드
+ * */
 @Configuration
 public class RedisConfig {
     @Bean
