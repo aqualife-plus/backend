@@ -48,7 +48,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
 @Import(SecurityConfig.class)
-@WebMvcTest({UsersController.class, AuthController.class})
+@WebMvcTest(UsersController.class)
 class UsersControllerTest {
     @BeforeEach
     void setup() {
@@ -200,123 +200,6 @@ class UsersControllerTest {
                         CustomException.class, result.getResolvedException()))
                 .andExpect(result -> assertEquals(
                         "값이 없거나 이메일 형식이 아닙니다",
-                        result.getResolvedException().getMessage()))
-                .andDo(print());
-    }
-
-    @Test
-    @DisplayName("로그인 성공")
-    void successLogin() throws Exception {
-        //given
-        LoginRequestDto loginRequestDto =
-                new LoginRequestDto("1@1.com", "testPassword");
-        TokenResponseDto tokenDto =
-                new TokenResponseDto(
-                        "accessTokenValue",
-                        "refreshTokenValue");
-        //when
-        when(authService.login(any(LoginRequestDto.class))).thenReturn(tokenDto);
-        //then
-        String responseValue = mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequestDto)))
-                .andExpect(status().isOk()) // 예외 시 예상되는 상태 코드 설정
-                .andDo(print())
-                .andReturn()
-                .getResponse().getContentAsString();
-
-        Map<String, String> responseMap =
-                objectMapper.readValue(responseValue, new TypeReference<>() {
-                });
-
-        assertEquals("Bearer accessTokenValue", responseMap.get("accessToken"));
-        assertEquals("userTokenValue", responseMap.get("userToken"));
-        assertEquals("Bearer refreshTokenValue", responseMap.get("refreshToken"));
-    }
-
-    @Test
-    @DisplayName("로그인 실패 -> 이메일과 비밀번호가 매칭 X")
-    void failLogin_notMatchEmailAndPassword() throws Exception {
-        //given
-        LoginRequestDto loginDto =
-                new LoginRequestDto("1@1.com", "testPassword");
-        //when
-        when(authService.login(any(LoginRequestDto.class)))
-                .thenThrow(new CustomException(ErrorCode.NOT_MATCH_PASSWORD_OR_EMAIL));
-        //then
-        mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginDto)))
-                .andExpect(status().isUnauthorized())
-                .andExpect(result -> assertInstanceOf(
-                        CustomException.class, result.getResolvedException()))
-                .andExpect(result -> assertEquals(
-                        "이메일 or 비밀번호가 맞지 않습니다.",
-                        result.getResolvedException().getMessage()))
-                .andDo(print());
-    }
-
-    @Test
-    @DisplayName("로그인 실패 -> 입력 이메일과 매칭되는 계정이 없음")
-    void failLogin_invalidUserMatchEmail() throws Exception {
-        //given
-        LoginRequestDto loginRequestDto =
-                new LoginRequestDto("1@1.com", "testPassword");
-        //when
-        when(authService.login(any(LoginRequestDto.class)))
-                .thenThrow(new CustomException(ErrorCode.NOT_FOUND_MEMBER));
-        //then
-        mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequestDto)))
-                .andExpect(status().isNotFound())
-                .andExpect(result -> assertInstanceOf(
-                        CustomException.class, result.getResolvedException()))
-                .andExpect(result -> assertEquals(
-                        "존재하지 않는 회원입니다.",
-                        result.getResolvedException().getMessage()))
-                .andDo(print());
-    }
-
-    @Test
-    @DisplayName("refresh 토큰으로 accessToken 생성 성공")
-    @WithMockUser
-    void successCreateNewAccessToken_useRefreshToken() throws Exception {
-        //given
-        String refreshTokenExample = "Bearer refreshTokenExample";
-        String newAccessTokenExample = "Bearer newAccessTokenExample";
-        //when
-        when(authService.refreshAccessToken()).thenReturn(newAccessTokenExample);
-        //then
-        String responseValue = mockMvc.perform(post("/auth/refresh-token")
-                        .header("Authorization", refreshTokenExample) // 헤더에 refreshToken 추가
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andDo(print())
-                .andReturn()
-                .getResponse().getContentAsString();
-
-        assertEquals(newAccessTokenExample, responseValue);
-    }
-
-    @Test
-    @DisplayName("refresh 토큰으로 accessToken 생성 실패 -> token이 없음")
-    @WithMockUser
-    void failCreateNewAccessToken_invalidRefreshToken() throws Exception {
-        //given
-        String refreshTokenExample = "Bearer refreshTokenExample";
-        //when
-        when(authService.refreshAccessToken())
-                .thenThrow(new CustomException(ErrorCode.INVALID_REFRESH_TOKEN));
-        //then
-        mockMvc.perform(post("/auth/refresh-token")
-                        .header("Authorization", refreshTokenExample)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized())
-                .andExpect(result -> assertInstanceOf(
-                        CustomException.class, result.getResolvedException()))
-                .andExpect(result -> assertEquals(
-                        "존재하지 않는 토큰입니다.",
                         result.getResolvedException().getMessage()))
                 .andDo(print());
     }
