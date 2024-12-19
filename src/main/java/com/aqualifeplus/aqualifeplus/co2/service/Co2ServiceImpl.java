@@ -51,8 +51,10 @@ public class Co2ServiceImpl implements Co2Service {
     public Co2ResponseDto co2Reserve(Long idx) {
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+        Fishbowl fishbowl = fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID));
 
-        Co2 co2 = co2Repository.findById(idx)
+        Co2 co2 = co2Repository.findByIdAndFishbowl(idx, fishbowl)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CO2_RESERVE));
 
         return Co2ResponseDto.toResponseDto(co2);
@@ -98,8 +100,10 @@ public class Co2ServiceImpl implements Co2Service {
     public Co2SuccessDto co2UpdateReserve(Long idx, Co2RequestDto co2RequestDto) {
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+        Fishbowl fishbowl = fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID));
 
-        Co2 targetCo2 = co2Repository.findById(idx)
+        Co2 targetCo2 = co2Repository.findByIdAndFishbowl(idx, fishbowl)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_CO2_RESERVE));
 
         targetCo2.setCo2ReserveState(co2RequestDto.getCo2ReserveState());
@@ -149,8 +153,10 @@ public class Co2ServiceImpl implements Co2Service {
     public DeleteCo2SuccessDto co2DeleteReserve(Long idx) {
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+        Fishbowl fishbowl = fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID));
 
-        co2Repository.deleteById(idx);
+        co2Repository.deleteByIdAndFishbowl(idx, fishbowl);
 
         String pattern = users.getUserId() + "/*/" + "co2" + "/" + idx + "/*";
 

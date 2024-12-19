@@ -52,8 +52,10 @@ public class LightServiceImpl implements LightService {
     public LightResponseDto lightReserve(Long idx) {
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+        Fishbowl fishbowl = fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID));
 
-        Light light = lightRepository.findById(idx)
+        Light light = lightRepository.findByIdAndFishbowl(idx, fishbowl)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_LIGHT_RESERVE));
 
         return LightResponseDto.toResponseDto(light);
@@ -99,8 +101,10 @@ public class LightServiceImpl implements LightService {
     public LightSuccessDto lightUpdateReserve(Long idx, LightRequestDto lightRequestDto) {
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+        Fishbowl fishbowl = fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID));
 
-        Light targetLight = lightRepository.findById(idx)
+        Light targetLight = lightRepository.findByIdAndFishbowl(idx, fishbowl)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_LIGHT_RESERVE));
 
         targetLight.setLightReserveState(lightRequestDto.isLightReserveState());
@@ -151,8 +155,10 @@ public class LightServiceImpl implements LightService {
     public DeleteLightSuccessDto lightDeleteReserve(Long idx) {
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+        Fishbowl fishbowl = fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID));
 
-        lightRepository.deleteById(idx);
+        lightRepository.deleteByIdAndFishbowl(idx, fishbowl);
 
         String pattern = users.getUserId() + "/*/" + "light" + "/" + idx + "/*";
 

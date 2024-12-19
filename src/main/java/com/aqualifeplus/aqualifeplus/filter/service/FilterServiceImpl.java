@@ -42,14 +42,12 @@ public class FilterServiceImpl implements FilterService {
     private final RedisReserveCommonService redisReserveCommonService;
 
 
-
     @Override
     public FilterResponseDto getFilter() {
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
-        Fishbowl fishbowl =
-                fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
-                        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID));
+        Fishbowl fishbowl = fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID));
         Filter filter = filterRepository.findByFishbowl(fishbowl)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FILTER));
 
@@ -66,9 +64,9 @@ public class FilterServiceImpl implements FilterService {
         String accessToken = firebaseConfig.getAccessToken();
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
-        Fishbowl fishbowl =
-                fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
-                        .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID));
+        Fishbowl fishbowl = fishbowlRepository.findByFishbowlIdAndUsers(jwtService.getFishbowlToken(), users)
+                .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID));
+
         Filter filter = filterRepository.findByFishbowl(fishbowl)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_FILTER));
         filter.setFilterDay(filterRequestDto.getFilterDay());
@@ -108,7 +106,7 @@ public class FilterServiceImpl implements FilterService {
             fishbowlSettingRedis.createReserveInRedis(
                     key,
                     redisReserveCommonService
-                            .getExpirationTime(filter.getFilterTime(), LocalTime.now())+(weekDay * ADAY));
+                            .getExpirationTime(filter.getFilterTime(), LocalTime.now()) + (weekDay * ADAY));
         }
 
         return UpdateFilterResponseDto.builder()
