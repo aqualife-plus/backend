@@ -107,6 +107,31 @@ class UsersControllerTest {
     }
 
     @Test
+    @DisplayName("회원가입 실패 -> valid error")
+    void failSignup_DtoValidError() throws Exception {
+        // TODO : Valid 더 추가하기
+        // given
+        UsersRequestDto usersRequestDto =
+                UsersRequestDto.builder()
+                        .email("1@1.com")
+                        .password(" ")
+                        .nickname("test nickname")
+                        .phoneNumber(null)
+                        .build();
+        // when
+        // then
+        mockMvc.perform(post("/users/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(usersRequestDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(
+                        MethodArgumentNotValidException.class,
+                        result.getResolvedException()
+                ))
+                .andDo(print());
+    }
+
+    @Test
     @DisplayName("회원가입 실패 -> 이미 가입된 email or id로 가입 시도")
     void failSignup_tryAlreadySignedEmail() throws Exception {
         // given
@@ -134,28 +159,14 @@ class UsersControllerTest {
     }
 
     @Test
-    @DisplayName("회원가입 실패 -> valid error")
-    void failSignup_DtoValidError() throws Exception {
+    @DisplayName("회원가입 실패 -> save 메소드 error")
+    void failSignup_errorJPASaveMethod() throws Exception {
+        // TODO : save메소드 에러 처리 후 구현
         // given
-        UsersRequestDto usersRequestDto =
-                UsersRequestDto.builder()
-                        .email("1@1.com")
-                        .password(" ")
-                        .nickname("test nickname")
-                        .phoneNumber(null)
-                        .build();
         // when
         // then
-        mockMvc.perform(post("/users/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(usersRequestDto)))
-                .andExpect(status().isBadRequest())
-                .andExpect(result -> assertInstanceOf(
-                        MethodArgumentNotValidException.class,
-                        result.getResolvedException()
-                ))
-                .andDo(print());
     }
+
 
     @Test
     @DisplayName("이메일 중복체크 성공")
@@ -182,6 +193,17 @@ class UsersControllerTest {
 
         assertFalse(returnDto.isSuccess());
     }
+
+    @Test
+    @DisplayName("이메일 중복체크 실패 -> valid error")
+    void failCheckEmail_validError() {
+        // TODO
+        // given
+        // when
+        // then
+    }
+
+
 
     @Test
     @DisplayName("이메일 중복체크 실패 -> 이메일 이미 존재")
@@ -358,6 +380,60 @@ class UsersControllerTest {
     }
 
     @Test
+    @DisplayName("회원정보 update 실패 -> update 메소드 error")
+    @WithMockUser
+    void failUpdateMyInfo_errorJPAUpdateMethod() {
+        // given
+        // when
+        // then
+    }
+
+    @Test
+    @DisplayName("비밀번호 수정 성공")
+    @WithMockUser
+    void successChangePassword() {
+        // given
+        // when
+        // then
+    }
+
+    @Test
+    @DisplayName("비밀번호 수정 실패 -> valid errpr")
+    @WithMockUser
+    void failChangePassword_validError() {
+        // given
+        // when
+        // then
+    }
+
+    @Test
+    @DisplayName("비밀번호 수정 실패 -> token 만료")
+    @WithMockUser
+    void failChangePassword_invalidAccessToken() {
+        // given
+        // when
+        // then
+    }
+
+    @Test
+    @DisplayName("비밀번호 수정 실패 -> 일치하는 유저가 없음")
+    @WithMockUser
+    void failChangePassword_notMatchUsers() {
+        // given
+        // when
+        // then
+    }
+
+    @Test
+    @DisplayName("비밀번호 수정 실패 -> 이전 비밀번호와 유저의 비밀번호가 일치하지 않음")
+    @WithMockUser
+    void failChangePassword_notMatchPasswordInputPassword() {
+        // given
+        // when
+        // then
+    }
+
+    @Test
     @DisplayName("회원 delete 성공")
     @WithMockUser
     void successDeleteUsers() throws Exception {
@@ -384,6 +460,30 @@ class UsersControllerTest {
     }
 
     @Test
+    @DisplayName("회원 delete 실패 -> token 만료")
+    void failDeleteUsers_invalidAccessToken() {
+        // given
+        // when
+        // then
+    }
+
+    @Test
+    @DisplayName("회원 delete 실패 -> 일치하는 유저가 없음")
+    void failDeleteUsers_notMatchUsers() {
+        // given
+        // when
+        // then
+    }
+
+    @Test
+    @DisplayName("회원 delete 실패 -> delete method error")
+    void failDeleteUsers_errorJPADeleteMethod() {
+        // given
+        // when
+        // then
+    }
+
+    @Test
     @DisplayName("회원 logout 성공")
     @WithMockUser
     void successLogout() throws Exception {
@@ -407,5 +507,29 @@ class UsersControllerTest {
         SuccessDto returnDto = objectMapper.readValue(responseValue, SuccessDto.class);
 
         assertTrue(returnDto.isSuccess());
+    }
+
+    @Test
+    @DisplayName("회원 logout 실패 -> token 만료")
+    void failLogout_invalidAccessToken() {
+        // given
+        // when
+        // then
+    }
+
+    @Test
+    @DisplayName("회원 logout 실패 -> 일치하는 유저가 없음")
+    void failLogout_notMatchUsers() {
+        // given
+        // when
+        // then
+    }
+
+    @Test
+    @DisplayName("회원 logout 실패 -> redis delete error")
+    void failLogout_errorRedisDeleteError() {
+        // given
+        // when
+        // then
     }
 }

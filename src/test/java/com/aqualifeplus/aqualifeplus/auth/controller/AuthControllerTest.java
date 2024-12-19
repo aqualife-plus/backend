@@ -80,6 +80,15 @@ class AuthControllerTest {
     }
 
     @Test
+    @DisplayName("로그인 실패 -> valid error")
+    void failLogin_validError() {
+        // TODO : valid error 조사 후 실행
+        // given
+        // when
+        // then
+    }
+
+    @Test
     @DisplayName("로그인 실패 -> 이메일과 비밀번호가 매칭 X")
     void failLogin_notMatchEmailAndPassword() throws Exception {
         //given
@@ -124,6 +133,34 @@ class AuthControllerTest {
     }
 
     @Test
+    @DisplayName("로그인 실패 -> findByEmail Error")
+    void failLogin_ErrorFindByEmail() throws Exception {
+        // TODO : findBy Error 처리 후 구현
+        //given
+        //when
+        //then
+    }
+
+
+    @Test
+    @DisplayName("로그인 실패 -> 비밀번호가 일치 X")
+    void failLogin_notMatchPassword() {
+        // TODO : 테스트 만들기
+        // given
+        // when
+        // then
+    }
+
+    @Test
+    @DisplayName("로그인 실패 -> redis에 refresh 저장 실패")
+    void failLogin_notSaveRefreshTokenInRedis() {
+        // TODO :  Redis 에러 처리 후 구현
+        // given
+        // when
+        // then
+    }
+    
+    @Test
     @DisplayName("refresh 토큰으로 accessToken 생성 성공")
     @WithMockUser
     void successCreateNewAccessToken_useRefreshToken() throws Exception {
@@ -166,15 +203,85 @@ class AuthControllerTest {
                 .andDo(print());
     }
 
+
     @Test
-    void login() {
+    @DisplayName("refresh 토큰으로 accessToken 생성 실패 -> redis에 refresh 토큰 X")
+    void failCreateNewAccessToken_notFoundRefreshTokenInRedis() {
+        // TODO : Redis 에러 처리 후 구현
+        // given
+        // when
+        // then
     }
 
     @Test
-    void androidToken() {
+    @DisplayName("refresh 토큰으로 accessToken 생성 실패 -> redis의 refresh 토큰과 받은 refresh 토큰이 다름")
+    void failCreateNewAccessToken_notMatchRefreshTokenInRedis() {
+        // TODO
+        // given
+        // when
+        // then
     }
 
     @Test
-    void refreshAccessToken() {
+    @DisplayName("휴대폰 fcm token 저장 성공")
+    void successAndroidToken() {
+        //TODO
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("휴대폰 fcm token 저장 실패 -> valid error")
+    void failAndroidToken_validError() {
+        //TODO
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("휴대폰 fcm token 저장 실패 -> accessToken과 일치하는 users가 없음")
+    void failAndroidToken_notFoundUsersInAccessToken() {
+        //TODO
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("휴대폰 fcm token 저장 실패 -> redis에 저장 실패")
+    void failAndroidToken_errorSaveFCMTokenInRedis() {
+        //TODO
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("휴대폰 fcm token 저장 실패 -> firebase에서 get 실패")
+    void failAndroidToken_errorGetDataInFirebase() {
+        //TODO
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("휴대폰 fcm token 저장 실패 -> firebase get한 값이 null일 때")
+    void failAndroidToken_getFirebaseDataIsNull() {
+        //TODO
+        //given
+        //when
+        //then
+    }
+
+    @Test
+    @DisplayName("휴대폰 fcm token 저장 실패 -> redis에 fcm token get 실패")
+    void failAndroidToken_errorGetFCMDataInRedis() {
+        //TODO
+        //given
+        //when
+        //then
     }
 }

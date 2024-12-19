@@ -13,6 +13,8 @@ public class FirebaseHttpRepository {
     private final FirebaseConfig firebaseConfig;
 
     public void createFirebaseData(Object value, String url, String accessToken) {
+        //TODO : error 처리
+
         firebaseConfig.webClientCreate()
                 .put() // POST로 요청
                 .uri(url + ".json")
@@ -29,6 +31,8 @@ public class FirebaseHttpRepository {
     }
 
     public void updateFirebaseData(Object value, String url, String accessToken) {
+        //TODO : error 처리
+
         firebaseConfig.webClientCreate()
                 .patch() // POST로 요청
                 .uri(url + ".json")
@@ -40,6 +44,8 @@ public class FirebaseHttpRepository {
     }
 
     public void deleteFirebaseData(String url, String accessToken) {
+        //TODO : error 처리
+
         firebaseConfig.webClientCreate()
                 .delete() // DELETE로 요청
                 .uri(url + ".json")
@@ -50,6 +56,8 @@ public class FirebaseHttpRepository {
     }
 
     public <T> T getFirebaseData(String url, String accessToken, ParameterizedTypeReference<T> responseType) {
+        //TODO : error 처리
+
         return firebaseConfig.webClientCreate()
                 .get()
                 .uri(url + ".json")
