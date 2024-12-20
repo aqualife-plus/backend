@@ -3,8 +3,7 @@ package com.aqualifeplus.aqualifeplus.filter.service;
 import com.aqualifeplus.aqualifeplus.auth.jwt.JwtService;
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
-import com.aqualifeplus.aqualifeplus.common.redis.FishbowlSettingRedis;
-import com.aqualifeplus.aqualifeplus.common.redis.RedisReserveCommonService;
+import com.aqualifeplus.aqualifeplus.common.redis.RedisService;
 import com.aqualifeplus.aqualifeplus.config.FirebaseConfig;
 import com.aqualifeplus.aqualifeplus.filter.dto.FilterRequestDto;
 import com.aqualifeplus.aqualifeplus.filter.dto.FilterResponseDto;
@@ -22,7 +21,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,9 +39,8 @@ public class FilterServiceImpl implements FilterService {
 
     private final FirebaseConfig firebaseConfig;
     private final FirebaseHttpRepository firebaseHttpRepository;
-    private final FishbowlSettingRedis fishbowlSettingRedis;
-    private final RedisReserveCommonService redisReserveCommonService;
-
+    private final RedisService redisService;
+    private final RedisTemplate<String, String> redisTemplateForFishbowlSettings;
 
     @Override
     public FilterResponseDto getFilter() {
@@ -81,8 +81,9 @@ public class FilterServiceImpl implements FilterService {
         firebaseHttpRepository.updateFirebaseData(maps, url, accessToken);
 
         //해당 값으로 되어 있는 redis 데이터 다 삭제
-        fishbowlSettingRedis.deleteReserveUsePatternInRedis
-                (users.getUserId() + "/" + fishbowl.getFishbowlId() + "/filter/*/*");
+        redisService.deleteReserveUsePatternInRedis(
+                redisTemplateForFishbowlSettings,
+                users.getUserId() + "/" + fishbowl.getFishbowlId() + "/filter/*/*");
 
         // 그 다음에 뺀 값을 절댓값으로 감싼다
         List<Integer> weekDayList = new ArrayList<>();
@@ -97,16 +98,16 @@ public class FilterServiceImpl implements FilterService {
         // 그리고 현재 시간을 기준으로 만료시간을 설정
         for (int weekDay : weekDayList) {
             String key =
-                    redisReserveCommonService.makeKey(
+                    redisService.makeKey(
                             users,
                             fishbowl,
                             filter.getId(), "filter",
                             LocalDateTime.now().plusDays(weekDay).getDayOfWeek().toString());
 
-            fishbowlSettingRedis.createReserveInRedis(
-                    key,
-                    redisReserveCommonService
-                            .getExpirationTime(filter.getFilterTime(), LocalTime.now()) + (weekDay * ADAY));
+            redisService.saveData(redisTemplateForFishbowlSettings,
+                    key, null,
+                    redisService.getExpirationTime(filter.getFilterTime(), LocalTime.now()) + ((long) weekDay * ADAY),
+                    TimeUnit.SECONDS);
         }
 
         return UpdateFilterResponseDto.builder()

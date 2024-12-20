@@ -7,6 +7,7 @@ import com.aqualifeplus.aqualifeplus.auth.dto.TokenResponseDto;
 import com.aqualifeplus.aqualifeplus.auth.jwt.JwtService;
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
+import com.aqualifeplus.aqualifeplus.common.redis.RedisService;
 import com.aqualifeplus.aqualifeplus.config.FirebaseConfig;
 import com.aqualifeplus.aqualifeplus.firebase.repository.FirebaseHttpRepository;
 import com.aqualifeplus.aqualifeplus.users.entity.Users;
@@ -25,9 +26,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AuthServiceImpl implements AuthService{
+public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final UsersRepository usersRepository;
+    private final RedisService redisService;
     private final RedisTemplate<String, String> redisTemplateForTokens;
     private final FirebaseHttpRepository firebaseHttpRepository;
     private final FirebaseConfig firebaseConfig;
@@ -45,7 +47,7 @@ public class AuthServiceImpl implements AuthService{
                     jwtService.makeAccessToken(email),
                     jwtService.makeRefreshToken(email));
 
-            redisTemplateForTokens.opsForValue().set(
+            redisService.saveData(redisTemplateForTokens,
                     "users : refreshToken : " + email,
                     rt.getRefreshToken().substring(7),
                     jwtService.getRefreshTokenExpirationMs(),
@@ -61,7 +63,7 @@ public class AuthServiceImpl implements AuthService{
         String authData = jwtService.getAuthorization();
         String email = jwtService.extractEmail(authData);
         String storedRefreshToken =
-                redisTemplateForTokens.opsForValue().get("users : refreshToken : " + email);
+                redisService.getData(redisTemplateForTokens, "users : refreshToken : " + email);
         if (storedRefreshToken != null && storedRefreshToken.equals(authData)) {
             return "Bearer " + jwtService.makeAccessToken(email);
         } else {
@@ -74,8 +76,9 @@ public class AuthServiceImpl implements AuthService{
         String accessToken = firebaseConfig.getAccessToken();
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
-        redisTemplateForTokens.opsForValue()
-                .set("users : androidToken : " + users.getEmail(), androidRequestDto.getToken());
+        redisService.saveDataNotTTL(redisTemplateForTokens,
+                "users : androidToken : " + users.getEmail(),
+                androidRequestDto.getToken());
         Map<String, Map<String, Object>> firebaseData = firebaseHttpRepository.getFirebaseData(
                 String.valueOf(users.getUserId()), accessToken,
                 new ParameterizedTypeReference<Map<String, Map<String, Object>>>() {
@@ -88,8 +91,9 @@ public class AuthServiceImpl implements AuthService{
 
                 Map<String, String> maps = new HashMap<>();
                 maps.put("deviceToken",
-                        redisTemplateForTokens.opsForValue()
-                                .get("users : androidToken : " + users.getEmail()));
+                        redisService.getData(
+                                redisTemplateForTokens,
+                                "users : androidToken : " + users.getEmail()));
 
                 if (fishbowlData.containsKey("deviceToken")) {
                     firebaseHttpRepository.updateFirebaseData(maps,

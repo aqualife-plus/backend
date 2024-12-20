@@ -9,16 +9,17 @@ import com.aqualifeplus.aqualifeplus.co2.entity.Co2;
 import com.aqualifeplus.aqualifeplus.co2.repository.Co2Repository;
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
-import com.aqualifeplus.aqualifeplus.common.redis.FishbowlSettingRedis;
-import com.aqualifeplus.aqualifeplus.common.redis.RedisReserveCommonService;
+import com.aqualifeplus.aqualifeplus.common.redis.RedisService;
 import com.aqualifeplus.aqualifeplus.fishbowl.entity.Fishbowl;
 import com.aqualifeplus.aqualifeplus.fishbowl.repository.FishbowlRepository;
 import com.aqualifeplus.aqualifeplus.users.entity.Users;
 import com.aqualifeplus.aqualifeplus.users.repository.UsersRepository;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,8 +32,8 @@ public class Co2ServiceImpl implements Co2Service {
     private final UsersRepository usersRepository;
     private final FishbowlRepository fishbowlRepository;
 
-    private final FishbowlSettingRedis fishbowlSettingRedis;
-    private final RedisReserveCommonService redisReserveCommonService;
+    private final RedisService redisService;
+    private final RedisTemplate<String, String> redisTemplateForFishbowlSettings;
 
     @Override
     public List<Co2ResponseDto> co2ReserveList() {
@@ -78,14 +79,16 @@ public class Co2ServiceImpl implements Co2Service {
         );
 
         if (saveCo2.isCo2ReserveState()) {
-            fishbowlSettingRedis.createReserveInRedis(
-                    redisReserveCommonService.makeKey(users, fishbowl, saveCo2.getId(), "co2", "on"),
-                    redisReserveCommonService.getExpirationTime(saveCo2.getCo2StartTime(), LocalTime.now())
-            );
-            fishbowlSettingRedis.createReserveInRedis(
-                    redisReserveCommonService.makeKey(users, fishbowl, saveCo2.getId(), "co2", "off"),
-                    redisReserveCommonService.getExpirationTime(saveCo2.getCo2EndTime(), LocalTime.now())
-            );
+            redisService.saveData(redisTemplateForFishbowlSettings,
+                    redisService.makeKey(users, fishbowl, saveCo2.getId(), "co2", "on"),
+                    "",
+                    redisService.getExpirationTime(saveCo2.getCo2StartTime(), LocalTime.now()),
+                    TimeUnit.SECONDS);
+            redisService.saveData(redisTemplateForFishbowlSettings,
+                    redisService.makeKey(users, fishbowl, saveCo2.getId(), "co2", "off"),
+                    "",
+                    redisService.getExpirationTime(saveCo2.getCo2EndTime(), LocalTime.now()),
+                    TimeUnit.SECONDS);
         }
 
         return Co2SuccessDto.builder()
@@ -111,33 +114,38 @@ public class Co2ServiceImpl implements Co2Service {
         targetCo2.setCo2EndTime(co2RequestDto.getCo2EndTime());
 
         String onKey =
-                redisReserveCommonService.makeKey(
+                redisService.makeKey(
                         users,
                         targetCo2.getFishbowl(),
                         targetCo2.getId(), "co2", "on");
         String offKey =
-                redisReserveCommonService.makeKey(
+                redisService.makeKey(
                         users,
                         targetCo2.getFishbowl(),
                         targetCo2.getId(), "co2", "off");
         int getStartExpirationTime =
-                redisReserveCommonService.getExpirationTime(targetCo2.getCo2StartTime(), LocalTime.now());
+                redisService.getExpirationTime(targetCo2.getCo2StartTime(), LocalTime.now());
         int getEndExpirationTime =
-                redisReserveCommonService.getExpirationTime(targetCo2.getCo2EndTime(), LocalTime.now());
+                redisService.getExpirationTime(targetCo2.getCo2EndTime(), LocalTime.now());
         String pattern = users.getUserId() + "/*/" + "co2" + "/" + idx + "/*";
 
-        switch (redisReserveCommonService.checkUpdateStateANDIsExistsKeys(
+        switch (redisService.checkUpdateStateAndIsExistsKeys(
                 targetCo2.isCo2ReserveState(),
-                fishbowlSettingRedis.isExists(onKey) && fishbowlSettingRedis.isExists(offKey))) {
+                redisService.isExists(redisTemplateForFishbowlSettings, onKey)
+                        && redisService.isExists(redisTemplateForFishbowlSettings, offKey))) {
             case UPDATE_STATE_TRUE_IS_EXIST_TRUE -> {
-                fishbowlSettingRedis.updateReserveInRedis(onKey, getStartExpirationTime);
-                fishbowlSettingRedis.updateReserveInRedis(offKey, getEndExpirationTime);
+                redisService.updateDataForReserve(redisTemplateForFishbowlSettings, onKey, getStartExpirationTime);
+                redisService.updateDataForReserve(redisTemplateForFishbowlSettings, offKey, getEndExpirationTime);
             }
             case UPDATE_STATE_TRUE_IS_EXIST_FALSE -> {
-                fishbowlSettingRedis.createReserveInRedis(onKey, getStartExpirationTime);
-                fishbowlSettingRedis.createReserveInRedis(offKey, getEndExpirationTime);
+                redisService.saveData(redisTemplateForFishbowlSettings,
+                        onKey, null,
+                        getStartExpirationTime, TimeUnit.SECONDS);
+                redisService.saveData(redisTemplateForFishbowlSettings,
+                        offKey, null,
+                        getStartExpirationTime, TimeUnit.SECONDS);
             }
-            case UPDATE_STATE_FALSE_IS_EXIST_TRUE -> fishbowlSettingRedis.deleteReserveUsePatternInRedis(pattern);
+            case UPDATE_STATE_FALSE_IS_EXIST_TRUE -> redisService.deleteReserveUsePatternInRedis(redisTemplateForFishbowlSettings, pattern);
             default -> log.info("변경된 값과 현재 값 모두 설정이 false입니다.");
         }
 
@@ -160,7 +168,7 @@ public class Co2ServiceImpl implements Co2Service {
 
         String pattern = users.getUserId() + "/*/" + "co2" + "/" + idx + "/*";
 
-        fishbowlSettingRedis.deleteReserveUsePatternInRedis(pattern);
+        redisService.deleteReserveUsePatternInRedis(redisTemplateForFishbowlSettings, pattern);
 
         return DeleteCo2SuccessDto.builder()
                 .success(true)

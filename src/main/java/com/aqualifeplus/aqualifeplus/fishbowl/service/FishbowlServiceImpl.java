@@ -4,14 +4,14 @@ import com.aqualifeplus.aqualifeplus.auth.jwt.JwtService;
 import com.aqualifeplus.aqualifeplus.co2.repository.Co2Repository;
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
-import com.aqualifeplus.aqualifeplus.common.redis.FishbowlSettingRedis;
+import com.aqualifeplus.aqualifeplus.common.redis.RedisService;
 import com.aqualifeplus.aqualifeplus.config.FirebaseConfig;
 import com.aqualifeplus.aqualifeplus.filter.entity.Filter;
 import com.aqualifeplus.aqualifeplus.filter.repository.FilterRepository;
-import com.aqualifeplus.aqualifeplus.fishbowl.dto.ConnectDto;
-import com.aqualifeplus.aqualifeplus.fishbowl.entity.Fishbowl;
 import com.aqualifeplus.aqualifeplus.firebase.entity.FishbowlData;
 import com.aqualifeplus.aqualifeplus.firebase.repository.FirebaseHttpRepository;
+import com.aqualifeplus.aqualifeplus.fishbowl.dto.ConnectDto;
+import com.aqualifeplus.aqualifeplus.fishbowl.entity.Fishbowl;
 import com.aqualifeplus.aqualifeplus.fishbowl.repository.FishbowlRepository;
 import com.aqualifeplus.aqualifeplus.light.repository.LightRepository;
 import com.aqualifeplus.aqualifeplus.users.dto.SuccessDto;
@@ -39,8 +39,9 @@ public class FishbowlServiceImpl implements FishbowlService {
 
     private final JwtService jwtService;
     private final FirebaseConfig firebaseConfig;
-    private final FishbowlSettingRedis fishbowlSettingRedis;
+    private final RedisService redisService;
     private final RedisTemplate<String, String> redisTemplateForTokens;
+    private final RedisTemplate<String, String> redisTemplateForFishbowlSettings;
 
     private final UsersRepository usersRepository;
     private final FishbowlRepository fishbowlRepository;
@@ -105,7 +106,7 @@ public class FishbowlServiceImpl implements FishbowlService {
                 .build());
 
         //그리고 이름 생성을 위한 fishbowlid를 redis에 저장
-        redisTemplateForTokens.opsForValue().set(
+        redisService.saveData(redisTemplateForTokens,
                 "fishbowl : fishbowl id : " + users.getUserId(),
                 createFishbowlId,
                 ADAY,
@@ -122,12 +123,7 @@ public class FishbowlServiceImpl implements FishbowlService {
         String accessToken = firebaseConfig.getAccessToken();
         long userId = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)).getUserId();
-        String fishbowlId = redisTemplateForTokens.opsForValue().get("fishbowl : fishbowl id : " + userId);
-
-        //null 처리 필요
-        if (fishbowlId == null) {
-            throw new CustomException(ErrorCode.NOT_FOUND_FISHBOWL_ID_USE_THIS_USER_ID);
-        }
+        String fishbowlId = redisService.getData(redisTemplateForTokens, "fishbowl : fishbowl id : " + userId);
 
         Map<String, String> maps = new HashMap<>();
         maps.put("name", name);
@@ -180,8 +176,8 @@ public class FishbowlServiceImpl implements FishbowlService {
         fishbowlRepository.deleteByFishbowlId(fishbowl.getFishbowlId());
 
         //redis에서 관련 값 다 삭제
-        fishbowlSettingRedis.deleteReserveUsePatternInRedis
-                (users.getUserId() + "/" + fishbowl.getFishbowlId() + "/*/*/*");
+        redisService.deleteReserveUsePatternInRedis(
+                redisTemplateForFishbowlSettings,users.getUserId() + "/" + fishbowl.getFishbowlId() + "/*/*/*");
 
         return SuccessDto.builder()
                 .success(true)
@@ -211,8 +207,8 @@ public class FishbowlServiceImpl implements FishbowlService {
 
         //redis에서 관련 값 다 삭제
         for (Fishbowl fishbowl : fishbowlList) {
-            fishbowlSettingRedis.deleteReserveUsePatternInRedis(
-                    users.getUserId() + "/" + fishbowl.getFishbowlId() + "/*/*/*");
+            redisService.deleteReserveUsePatternInRedis(
+                    redisTemplateForFishbowlSettings, users.getUserId() + "/" + fishbowl.getFishbowlId() + "/*/*/*");
         }
     }
 

@@ -25,6 +25,7 @@ public enum ErrorCode {
     NOT_FOUND_FILTER("해당 Filter가 없습니다.", HttpStatus.NOT_FOUND),
 
     DISCONNECTED_FIREBASE_SERVER("firebase와 연결이 끊겼습니다.", HttpStatus.SERVICE_UNAVAILABLE),
+    DISCONNECTED_REDIS("Redis와 연결이 끊겼습니다.", HttpStatus.SERVICE_UNAVAILABLE),
     PERMISSION_DENIED_FIREBASE_SERVER("firebase와 연결이 허용되지 않습니다.", HttpStatus.BAD_GATEWAY),
     NETWORK_FIREBASE_ERROR("네트워크 에러로 firebase와 소통하지 못했습니다.", HttpStatus.BAD_GATEWAY),
     FIREBASE_ERROR("firebase 에러입니다.", HttpStatus.INTERNAL_SERVER_ERROR),
@@ -34,6 +35,11 @@ public enum ErrorCode {
     FAIL_UPDATE_NOW_LIGHT("실시간 light에 데이터를 저장하지 못했습니다.", HttpStatus.BAD_REQUEST),
     FAIL_UPDATE_NOW_FILTER("실시간 filter에 데이터를 저장하지 못했습니다.", HttpStatus.BAD_REQUEST),
     NOT_MATCH_NOW_DATA_FORMAT("정해진 형식이 아닙니다.",HttpStatus.BAD_REQUEST),
+    DUPLICATE_KEY_IN_REDIS("Redis에서 중복된 키로 인해 작업이 실패했습니다.", HttpStatus.BAD_REQUEST),
+    DATA_INTEGRITY_VIOLATION_IN_REDIS("데이터 무결성 조건을 위반했습니다.", HttpStatus.BAD_REQUEST),
+    DATA_ACCESS_ERROR_IN_REDIS("Redis 데이터 접근 중 문제가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    VAlUE_NOT_FOUND_IN_REDIS("해당 키에 데이터가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
+    NOT_FOUND_KEY_IN_REDIS("해당 키가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
 
     RABBITMQ_BASIC_REJECT_ERROR("메세지 삭제에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
 
