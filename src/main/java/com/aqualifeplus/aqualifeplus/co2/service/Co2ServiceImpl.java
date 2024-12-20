@@ -139,10 +139,10 @@ public class Co2ServiceImpl implements Co2Service {
             }
             case UPDATE_STATE_TRUE_IS_EXIST_FALSE -> {
                 redisService.saveData(redisTemplateForFishbowlSettings,
-                        onKey, null,
+                        onKey, "",
                         getStartExpirationTime, TimeUnit.SECONDS);
                 redisService.saveData(redisTemplateForFishbowlSettings,
-                        offKey, null,
+                        offKey, "",
                         getStartExpirationTime, TimeUnit.SECONDS);
             }
             case UPDATE_STATE_FALSE_IS_EXIST_TRUE -> redisService.deleteReserveUsePatternInRedis(redisTemplateForFishbowlSettings, pattern);

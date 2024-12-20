@@ -64,7 +64,7 @@ public class AuthServiceImpl implements AuthService {
         String email = jwtService.extractEmail(authData);
         String storedRefreshToken =
                 redisService.getData(redisTemplateForTokens, "users : refreshToken : " + email);
-        if (storedRefreshToken != null && storedRefreshToken.equals(authData)) {
+        if (storedRefreshToken.equals(authData)) {
             return "Bearer " + jwtService.makeAccessToken(email);
         } else {
             throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);

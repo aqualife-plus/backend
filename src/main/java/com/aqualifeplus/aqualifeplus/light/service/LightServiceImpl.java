@@ -143,10 +143,10 @@ public class LightServiceImpl implements LightService {
             }
             case UPDATE_STATE_TRUE_IS_EXIST_FALSE -> {
                 redisService.saveData(redisTemplateForFishbowlSettings,
-                        onKey, null,
+                        onKey, "",
                         getStartExpirationTime, TimeUnit.SECONDS);
                 redisService.saveData(redisTemplateForFishbowlSettings,
-                        offKey, null,
+                        offKey, "",
                         getEndExpirationTime, TimeUnit.SECONDS);
             }
             case UPDATE_STATE_FALSE_IS_EXIST_TRUE ->

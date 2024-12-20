@@ -1,5 +1,6 @@
 package com.aqualifeplus.aqualifeplus.auth.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -10,7 +11,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AndroidRequestDto {
-    @NotNull(message = "Please token")
-    @NotEmpty(message = "Please enter token")
+    @NotBlank(message = "토큰을 넣어주세요.")
     private String token;
 }

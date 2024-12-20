@@ -105,7 +105,7 @@ public class FilterServiceImpl implements FilterService {
                             LocalDateTime.now().plusDays(weekDay).getDayOfWeek().toString());
 
             redisService.saveData(redisTemplateForFishbowlSettings,
-                    key, null,
+                    key, "",
                     redisService.getExpirationTime(filter.getFilterTime(), LocalTime.now()) + ((long) weekDay * ADAY),
                     TimeUnit.SECONDS);
         }
