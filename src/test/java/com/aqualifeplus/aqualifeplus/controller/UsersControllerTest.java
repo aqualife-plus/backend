@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.aqualifeplus.aqualifeplus.auth.controller.AuthController;
 import com.aqualifeplus.aqualifeplus.auth.service.AuthService;
+import com.aqualifeplus.aqualifeplus.common.exception.ErrorResponse;
 import com.aqualifeplus.aqualifeplus.config.SecurityConfig;
 import com.aqualifeplus.aqualifeplus.auth.dto.LoginRequestDto;
 import com.aqualifeplus.aqualifeplus.users.dto.SignupCheckDto;
@@ -35,6 +36,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -44,6 +46,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.MethodParameter;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -107,9 +110,74 @@ class UsersControllerTest {
     }
 
     @Test
-    @DisplayName("회원가입 실패 -> valid error")
-    void failSignup_DtoValidError() throws Exception {
-        // TODO : Valid 더 추가하기
+    @DisplayName("회원가입 실패 -> email blank valid error")
+    void failSignup_DtoEmailBlankValidError() throws Exception {
+        // given
+        UsersRequestDto usersRequestDto =
+                UsersRequestDto.builder()
+                        .email(" ")
+                        .password("test password")
+                        .nickname("test nickname")
+                        .phoneNumber(null)
+                        .build();
+        // when
+        // then
+        mockMvc.perform(post("/users/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(usersRequestDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(
+                        MethodArgumentNotValidException.class,
+                        result.getResolvedException()
+                ))
+                .andExpect(result -> {
+                    Map<String, String> dto =
+                            objectMapper.readValue(
+                                    result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                                    new TypeReference<Map<String, String>>() {});
+
+                    assertEquals(dto.get("errorKey"), "email");
+                    assertEquals(dto.get("message"), "이메일을 입력해야 합니다.");
+                })
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 -> email format valid error")
+    void failSignup_DtoEmailFormatValidError() throws Exception {
+        // given
+        UsersRequestDto usersRequestDto =
+                UsersRequestDto.builder()
+                        .email("123")
+                        .password("test password")
+                        .nickname("test nickname")
+                        .phoneNumber(null)
+                        .build();
+        // when
+        // then
+        mockMvc.perform(post("/users/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(usersRequestDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(
+                        MethodArgumentNotValidException.class,
+                        result.getResolvedException()
+                ))
+                .andExpect(result -> {
+                    Map<String, String> dto =
+                            objectMapper.readValue(
+                                    result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                                    new TypeReference<Map<String, String>>() {});
+
+                    assertEquals(dto.get("errorKey"), "email");
+                    assertEquals(dto.get("message"), "이메일 형식으로 입력해야 합니다.");
+                })
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 -> email format valid error")
+    void failSignup_DtoPasswordBlankValidError() throws Exception {
         // given
         UsersRequestDto usersRequestDto =
                 UsersRequestDto.builder()
@@ -128,6 +196,114 @@ class UsersControllerTest {
                         MethodArgumentNotValidException.class,
                         result.getResolvedException()
                 ))
+                .andExpect(result -> {
+                    Map<String, String> dto =
+                            objectMapper.readValue(
+                                    result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                                    new TypeReference<Map<String, String>>() {});
+
+                    assertEquals(dto.get("errorKey"), "password");
+                    assertEquals(dto.get("message"), "비밀번호를 입력해야 합니다.");
+                })
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 -> email format valid error")
+    void failSignup_DtoNicknameBlankValidError() throws Exception {
+        // given
+        UsersRequestDto usersRequestDto =
+                UsersRequestDto.builder()
+                        .email("1@1.com")
+                        .password("test password")
+                        .nickname(" ")
+                        .phoneNumber(null)
+                        .build();
+        // when
+        // then
+        mockMvc.perform(post("/users/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(usersRequestDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(
+                        MethodArgumentNotValidException.class,
+                        result.getResolvedException()
+                ))
+                .andExpect(result -> {
+                    Map<String, String> dto =
+                            objectMapper.readValue(
+                                    result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                                    new TypeReference<Map<String, String>>() {});
+
+                    assertEquals(dto.get("errorKey"), "nickname");
+                    assertEquals(dto.get("message"), "닉네임을 입력해야 합니다.");
+                })
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 -> phoneNumber length valid error")
+    void failSignup_DtoPhoneNumberLengthValidError() throws Exception {
+        // given
+        UsersRequestDto usersRequestDto =
+                UsersRequestDto.builder()
+                        .email("1@1.com")
+                        .password("test password")
+                        .nickname("test nickname")
+                        .phoneNumber("010111")
+                        .build();
+        // when
+        // then
+        mockMvc.perform(post("/users/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(usersRequestDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(
+                        MethodArgumentNotValidException.class,
+                        result.getResolvedException()
+                ))
+                .andExpect(result -> {
+                    Map<String, String> dto =
+                            objectMapper.readValue(
+                                    result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                                    new TypeReference<Map<String, String>>() {});
+
+                    assertEquals(dto.get("errorKey"), "phoneNumber");
+                    assertEquals(dto.get("message"), "11자리의 숫자가 필요합니다.");
+                })
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 -> phoneNumber pattern valid error")
+    void failSignup_DtoPhoneNumberPatternValidError() throws Exception {
+        // given
+        UsersRequestDto usersRequestDto =
+                UsersRequestDto.builder()
+                        .email("1@1.com")
+                        .password("test password")
+                        .nickname("test nickname")
+                        .phoneNumber("0101111222k")
+                        .build();
+        // when
+        // then
+        mockMvc.perform(post("/users/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(usersRequestDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(
+                        MethodArgumentNotValidException.class,
+                        result.getResolvedException()
+                ))
+                .andExpect(result -> {
+                    Map<String, String> dto =
+                            objectMapper.readValue(
+                                    result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                                    new TypeReference<Map<String, String>>() {});
+
+                    assertEquals(dto.get("errorKey"), "phoneNumber");
+                    assertEquals(dto.get("message"), "11자리의 숫자가 필요합니다.");
+                })
                 .andDo(print());
     }
 
@@ -161,6 +337,7 @@ class UsersControllerTest {
     @Test
     @DisplayName("회원가입 실패 -> save 메소드 error")
     void failSignup_errorJPASaveMethod() throws Exception {
+        // TODO : 여기서부터 시작!
         // TODO : save메소드 에러 처리 후 구현
         // given
         // when

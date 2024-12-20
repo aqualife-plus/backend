@@ -20,18 +20,17 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 @AllArgsConstructor
 @Builder
 public class UsersRequestDto {
-    @Email(message = "Please enter it in email format")
-    @NotBlank(message = "Please enter email")
+    @NotBlank(message = "이메일을 입력해야 합니다.")
+    @Email(message = "이메일 형식으로 입력해야 합니다.")
     private String email;
 
-    @NotBlank(message = "Please enter password")
+    @NotBlank(message = "비밀번호를 입력해야 합니다.")
     private String password;
 
-    @NotBlank(message = "Please enter nickname")
+    @NotBlank(message = "닉네임을 입력해야 합니다.")
     private String nickname;
 
-    @Size(min = 11, max = 11, message = "Please enter exactly 11 digits")
-    @Pattern(regexp = "^$|^[0-9]{11}$", message = "Please enter 11 digits or leave it blank")
+    @Pattern(regexp = "^$|^[0-9]{11}$", message = "11자리의 숫자가 필요합니다.")
     private String phoneNumber;
 
     @Enumerated(EnumType.STRING)

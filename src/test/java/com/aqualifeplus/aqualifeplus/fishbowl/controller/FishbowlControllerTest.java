@@ -24,7 +24,10 @@ import com.aqualifeplus.aqualifeplus.fishbowl.service.FishbowlService;
 import com.aqualifeplus.aqualifeplus.users.dto.SuccessDto;
 import com.aqualifeplus.aqualifeplus.users.service.UsersService;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -232,6 +235,14 @@ class FishbowlControllerTest {
                         MethodArgumentNotValidException.class,
                         result.getResolvedException()
                 ))
+                .andExpect(result -> {
+                    Map<String, String> dto = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            new TypeReference<Map<String, String>>() {
+                            });
+                    assertEquals(dto.get("errorKey"), "name");
+                    assertEquals(dto.get("message"), "이름이 필요합니다.");
+                })
                 .andDo(print());
     }
 
