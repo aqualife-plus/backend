@@ -11,6 +11,7 @@ import com.aqualifeplus.aqualifeplus.filter.repository.FilterRepository;
 import com.aqualifeplus.aqualifeplus.firebase.entity.FishbowlData;
 import com.aqualifeplus.aqualifeplus.firebase.repository.FirebaseHttpRepository;
 import com.aqualifeplus.aqualifeplus.fishbowl.dto.ConnectDto;
+import com.aqualifeplus.aqualifeplus.fishbowl.dto.FishbowlNameDto;
 import com.aqualifeplus.aqualifeplus.fishbowl.entity.Fishbowl;
 import com.aqualifeplus.aqualifeplus.fishbowl.repository.FishbowlRepository;
 import com.aqualifeplus.aqualifeplus.light.repository.LightRepository;
@@ -119,14 +120,14 @@ public class FishbowlServiceImpl implements FishbowlService {
     }
 
     @Override
-    public SuccessDto createFishbowlName(String name) {
+    public SuccessDto createFishbowlName(FishbowlNameDto fishbowlNameDto) {
         String accessToken = firebaseConfig.getAccessToken();
         long userId = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)).getUserId();
         String fishbowlId = redisService.getData(redisTemplateForTokens, "fishbowl : fishbowl id : " + userId);
 
         Map<String, String> maps = new HashMap<>();
-        maps.put("name", name);
+        maps.put("name", fishbowlNameDto.getName());
         String url = userId + "/" + fishbowlId;
         firebaseHttpRepository.updateFirebaseData(maps, url, accessToken);
 
@@ -136,7 +137,7 @@ public class FishbowlServiceImpl implements FishbowlService {
     }
 
     @Override
-    public SuccessDto updateFishbowlName(String name) {
+    public SuccessDto updateFishbowlName(FishbowlNameDto fishbowlNameDto) {
         String accessToken = firebaseConfig.getAccessToken();
         long userId = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER)).getUserId();
@@ -147,7 +148,7 @@ public class FishbowlServiceImpl implements FishbowlService {
         }
 
         Map<String, String> maps = new HashMap<>();
-        maps.put("name", name);
+        maps.put("name", fishbowlNameDto.getName());
         String url = userId + "/" + fishbowlToken;
         firebaseHttpRepository.updateFirebaseData(maps, url, accessToken);
 
@@ -186,7 +187,6 @@ public class FishbowlServiceImpl implements FishbowlService {
 
     @Transactional
     protected void deleteFishbowl(List<String> deleteList) {
-        String accessToken = firebaseConfig.getAccessToken();
         Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
         List<Fishbowl> fishbowlList = new ArrayList<>();

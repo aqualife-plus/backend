@@ -26,12 +26,12 @@ public class FishbowlController {
 
     @PostMapping("/name")
     public ResponseEntity<?> createFishbowlName(@Valid @RequestBody FishbowlNameDto fishbowlNameDto) {
-        return ResponseEntity.ok(fishbowlService.createFishbowlName(fishbowlNameDto.getName()));
+        return ResponseEntity.ok(fishbowlService.createFishbowlName(fishbowlNameDto));
     }
 
     @PatchMapping("/name")
     public ResponseEntity<?> updateFishbowlName(@Valid @RequestBody FishbowlNameDto fishbowlNameDto) {
-        return ResponseEntity.ok(fishbowlService.updateFishbowlName(fishbowlNameDto.getName()));
+        return ResponseEntity.ok(fishbowlService.updateFishbowlName(fishbowlNameDto));
     }
 
     @DeleteMapping

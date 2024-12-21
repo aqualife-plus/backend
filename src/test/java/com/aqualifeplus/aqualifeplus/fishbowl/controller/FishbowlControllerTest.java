@@ -3,6 +3,7 @@ package com.aqualifeplus.aqualifeplus.fishbowl.controller;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -17,6 +18,7 @@ import com.aqualifeplus.aqualifeplus.auth.oauth.OAuthSuccessHandler;
 import com.aqualifeplus.aqualifeplus.auth.service.AuthService;
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
+import com.aqualifeplus.aqualifeplus.common.exception.ErrorResponse;
 import com.aqualifeplus.aqualifeplus.config.SecurityConfig;
 import com.aqualifeplus.aqualifeplus.fishbowl.dto.ConnectDto;
 import com.aqualifeplus.aqualifeplus.fishbowl.dto.FishbowlNameDto;
@@ -28,12 +30,14 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import org.apache.coyote.ErrorState;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -69,21 +73,23 @@ class FishbowlControllerTest {
                 .build();
 
         // when
-        when(fishbowlService.connect()).thenReturn(connectDto);
+        when(fishbowlService.connect())
+                .thenReturn(connectDto);
+
         // then
-        String responseValue = mockMvc.perform(get("/fishbowl/connect")
+        mockMvc.perform(get("/fishbowl/connect")
                         .header("Authorization", "Bearer accessToken") // 헤더에 refreshToken 추가
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(connectDto)))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andDo(print())
-                .andReturn()
-                .getResponse().getContentAsString();
+                .andExpect(result -> {
+                    ConnectDto dto = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ConnectDto.class);
 
-        ConnectDto returnConnectDto =
-                objectMapper.readValue(responseValue, ConnectDto.class);
-
-        assertTrue(returnConnectDto.isSuccess());
+                    assertEquals(dto.isSuccess(), connectDto.isSuccess());
+                    assertEquals(dto.getFishbowlId(), connectDto.getFishbowlId());
+                })
+                .andDo(print());
     }
 
     @Test
@@ -97,8 +103,7 @@ class FishbowlControllerTest {
         // then
         mockMvc.perform(get("/fishbowl/connect")
                         .header("Authorization", "Bearer accessToken") // 헤더에 refreshToken 추가
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(any(ConnectDto.class))))
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andExpect(result -> assertInstanceOf(
                         CustomException.class, result.getResolvedException()))
@@ -124,9 +129,15 @@ class FishbowlControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(result -> assertInstanceOf(
                         CustomException.class, result.getResolvedException()))
-                .andExpect(result -> assertEquals(
-                        "잘못된 인증정보입니다.",
-                        result.getResolvedException().getMessage()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
+
+                    assertEquals(response.getErrorCode(), ErrorCode.INVALID_CREDENTIALS);
+                    assertEquals(response.getStatus(), HttpStatus.UNAUTHORIZED);
+                    assertEquals(response.getMessage(), "잘못된 인증정보입니다.");
+                })
                 .andDo(print());
     }
 
@@ -151,33 +162,59 @@ class FishbowlControllerTest {
     }
 
     @Test
-    @DisplayName("어항 연결 실패 - JPA 삭제 메소드 error")
+    @DisplayName("어항 연결 실패 - JPA 삭제 메소드 error (기타 오류만 )")
     @WithMockUser
     void failConnect_errorJPADeleteMethod() throws Exception {
-        // TODO
         // given
         // when
+        when(fishbowlService.connect())
+                .thenThrow(new CustomException(ErrorCode.UNEXPECTED_ERROR_IN_JPA));
         // then
+        mockMvc.perform(get("/fishbowl/connect")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class,
+                        result.getResolvedException()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
+
+                    assertEquals(response.getErrorCode(), ErrorCode.UNEXPECTED_ERROR_IN_JPA);
+                    assertEquals(response.getStatus(), HttpStatus.INTERNAL_SERVER_ERROR);
+                    assertEquals(response.getMessage(), "JPA에서 예상치 못한 오류 발생");
+                })
+                .andDo(print());
     }
 
     @Test
-    @DisplayName("어항 연결 실패 - redis에 데이터 저장 실패")
+    @DisplayName("어항 연결 실패 - redis에 데이터 작업 실패 (DataAccessException만)")
     @WithMockUser
     void failConnect_errorSaveFishbowlId() throws Exception {
-        // TODO : Redis 에러 처리 후 구현
         // given
         // when
+        when(fishbowlService.connect())
+                .thenThrow(new CustomException(ErrorCode.DATA_ACCESS_ERROR_IN_REDIS));
         // then
-    }
+        mockMvc.perform(get("/fishbowl/connect")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class,
+                        result.getResolvedException()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
 
-    @Test
-    @DisplayName("어항 연결 실패 - redis에 데이터 ,삭제 실패")
-    @WithMockUser
-    void failConnect_errorDeleteFishbowlId() throws Exception {
-        // TODO : Redis 에러 처리 후 구현
-        // given
-        // when
-        // then
+                    assertEquals(response.getErrorCode(), ErrorCode.DATA_ACCESS_ERROR_IN_REDIS);
+                    assertEquals(response.getStatus(), HttpStatus.INTERNAL_SERVER_ERROR);
+                    assertEquals(response.getMessage(), "Redis 데이터 접근 중 문제가 발생했습니다.");
+                })
+                .andDo(print());
     }
 
     @Test
@@ -197,22 +234,22 @@ class FishbowlControllerTest {
 
         // when
         when(fishbowlService
-                .createFishbowlName(any(String.class)))
+                .createFishbowlName(any(FishbowlNameDto.class)))
                 .thenReturn(successDto);
         // then
-        String responseValue = mockMvc.perform(post("/fishbowl/name")
+        mockMvc.perform(post("/fishbowl/name")
                         .header("Authorization", "Bearer accessToken") // 헤더에 refreshToken 추가
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(fishbowlNameDto)))
                 .andExpect(status().isOk())
-                .andDo(print())
-                .andReturn()
-                .getResponse().getContentAsString();
+                .andExpect(result -> {
+                    SuccessDto dto = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            SuccessDto.class);
 
-        SuccessDto returnSuccessDto =
-                objectMapper.readValue(responseValue, SuccessDto.class);
-
-        assertTrue(returnSuccessDto.isSuccess());
+                    assertTrue(dto.isSuccess());
+                })
+                .andDo(print());
     }
 
     @Test
@@ -256,7 +293,7 @@ class FishbowlControllerTest {
                         .name("test name")
                         .build();
         // when
-        when(fishbowlService.createFishbowlName(any(String.class))).
+        when(fishbowlService.createFishbowlName(any(FishbowlNameDto.class))).
                 thenThrow(new CustomException(ErrorCode.NOT_FOUND_MEMBER));
         // then
         mockMvc.perform(post("/fishbowl/name")
@@ -282,7 +319,7 @@ class FishbowlControllerTest {
                         .name("test name")
                         .build();
         // when
-        when(fishbowlService.createFishbowlName(any(String.class))).
+        when(fishbowlService.createFishbowlName(any(FishbowlNameDto.class))).
                 thenThrow(new CustomException(ErrorCode.INVALID_CREDENTIALS));
         // then
         mockMvc.perform(post("/fishbowl/name")
@@ -302,10 +339,34 @@ class FishbowlControllerTest {
     @DisplayName("어항 이름 초기설정 실패 - redis 내부에 존재하지 않는 fishbowlId")
     @WithMockUser
     void failCreateFishbowlName_notFoundFishbowlIdInRedis() throws Exception {
-        // TODO : Redis 에러처리 후 작업하기
         // given
+        FishbowlNameDto fishbowlNameDto =
+                FishbowlNameDto.builder()
+                        .name("test name")
+                        .build();
+
         // when
+        when(fishbowlService.createFishbowlName(any(FishbowlNameDto.class)))
+                .thenThrow(new CustomException(ErrorCode.VAlUE_NOT_FOUND_IN_REDIS));
         // then
+        mockMvc.perform(post("/fishbowl/name")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(fishbowlNameDto)))
+                .andExpect(status().isNotFound())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class,
+                        result.getResolvedException()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
+
+                    assertEquals(response.getErrorCode(), ErrorCode.VAlUE_NOT_FOUND_IN_REDIS);
+                    assertEquals(response.getStatus(), HttpStatus.NOT_FOUND);
+                    assertEquals(response.getMessage(), "해당 키에 데이터가 존재하지 않습니다.");
+                })
+                .andDo(print());
     }
 
     @Test
@@ -335,7 +396,7 @@ class FishbowlControllerTest {
 
         // when
         when(fishbowlService
-                .updateFishbowlName(any(String.class)))
+                .updateFishbowlName(any(FishbowlNameDto.class)))
                 .thenReturn(successDto);
         // then
         String responseValue = mockMvc.perform(patch("/fishbowl/name")
@@ -386,7 +447,7 @@ class FishbowlControllerTest {
                         .name("test name")
                         .build();
         // when
-        when(fishbowlService.updateFishbowlName(any(String.class))).
+        when(fishbowlService.updateFishbowlName(any(FishbowlNameDto.class))).
                 thenThrow(new CustomException(ErrorCode.NOT_FOUND_MEMBER));
         // then
         mockMvc.perform(patch("/fishbowl/name")
@@ -412,7 +473,7 @@ class FishbowlControllerTest {
                         .name("test name")
                         .build();
         // when
-        when(fishbowlService.updateFishbowlName(any(String.class))).
+        when(fishbowlService.updateFishbowlName(any(FishbowlNameDto.class))).
                 thenThrow(new CustomException(ErrorCode.INVALID_CREDENTIALS));
         // then
         mockMvc.perform(patch("/fishbowl/name")
@@ -432,10 +493,34 @@ class FishbowlControllerTest {
     @DisplayName("어항 이름 변경 실패 - redis 내부에 존재하지 않는 fishbowlId")
     @WithMockUser
     void failUpdateFishbowlName_notFoundFishbowlIdInRedis() throws Exception {
-        // TODO : Redis 에러처리 후 작업하기
         // given
+        FishbowlNameDto fishbowlNameDto =
+                FishbowlNameDto.builder()
+                        .name("test name")
+                        .build();
+
         // when
+        when(fishbowlService.updateFishbowlName(any(FishbowlNameDto.class)))
+                .thenThrow(new CustomException(ErrorCode.VAlUE_NOT_FOUND_IN_REDIS));
         // then
+        mockMvc.perform(patch("/fishbowl/name")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(fishbowlNameDto)))
+                .andExpect(status().isNotFound())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class,
+                        result.getResolvedException()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
+
+                    assertEquals(response.getErrorCode(), ErrorCode.VAlUE_NOT_FOUND_IN_REDIS);
+                    assertEquals(response.getStatus(), HttpStatus.NOT_FOUND);
+                    assertEquals(response.getMessage(), "해당 키에 데이터가 존재하지 않습니다.");
+                })
+                .andDo(print());
     }
 
     @Test
@@ -450,7 +535,97 @@ class FishbowlControllerTest {
 
 
     @Test
-    void deleteFishbowl() {
-        // TODO : 여기부터 시작
+    @DisplayName("어항 삭제 성공")
+    @WithMockUser
+    void successDeleteFishbowl() throws Exception {
+        // given
+        SuccessDto successDto =
+                SuccessDto.builder()
+                        .success(true)
+                        .build();
+
+        // when
+        when(fishbowlService.deleteFishbowl())
+                .thenReturn(successDto);
+        // then
+        mockMvc.perform(delete("/fishbowl")
+                .header("Authorization", "Bearer accessToken")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(result -> {
+                    SuccessDto dto = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            SuccessDto.class);
+
+                    assertTrue(dto.isSuccess());
+                })
+                .andDo(print());
+
+    }
+
+    @Test
+    @DisplayName("어항 삭제 실패 - firebase 어항 삭제 실패")
+    @WithMockUser
+    void failDeleteFishbowl_errorDeleteFishbowlData() throws Exception {
+        // TODO : firebase 에러 처리 후 구현
+        // given
+        // when
+        // then
+    }
+
+    @Test
+    @DisplayName("어항 삭제 실패 - JPA 삭제 메소드 error (기타 오류만 )")
+    @WithMockUser
+    void failDeleteFishbowl_errorJPADeleteMethod() throws Exception {
+        // given
+        // when
+        when(fishbowlService.deleteFishbowl())
+                .thenThrow(new CustomException(ErrorCode.UNEXPECTED_ERROR_IN_JPA));
+        // then
+        mockMvc.perform(delete("/fishbowl")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class,
+                        result.getResolvedException()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
+
+                    assertEquals(response.getErrorCode(), ErrorCode.UNEXPECTED_ERROR_IN_JPA);
+                    assertEquals(response.getStatus(), HttpStatus.INTERNAL_SERVER_ERROR);
+                    assertEquals(response.getMessage(), "JPA에서 예상치 못한 오류 발생");
+                })
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("어항 삭제 실패 - redis에 데이터 작업 실패 (DataAccessException만)")
+    @WithMockUser
+    void failDeleteFishbowl_errorSaveFishbowlId() throws Exception {
+        // given
+        // when
+        when(fishbowlService.deleteFishbowl())
+                .thenThrow(new CustomException(ErrorCode.DATA_ACCESS_ERROR_IN_REDIS));
+        // then
+        mockMvc.perform(delete("/fishbowl")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class,
+                        result.getResolvedException()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
+
+                    assertEquals(response.getErrorCode(), ErrorCode.DATA_ACCESS_ERROR_IN_REDIS);
+                    assertEquals(response.getStatus(), HttpStatus.INTERNAL_SERVER_ERROR);
+                    assertEquals(response.getMessage(), "Redis 데이터 접근 중 문제가 발생했습니다.");
+                })
+                .andDo(print());
     }
 }
