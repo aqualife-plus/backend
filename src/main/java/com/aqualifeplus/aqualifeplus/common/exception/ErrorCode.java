@@ -39,6 +39,11 @@ public enum ErrorCode {
     DATA_INTEGRITY_VIOLATION_IN_REDIS("데이터 무결성 조건을 위반했습니다.", HttpStatus.BAD_REQUEST),
     DATA_ACCESS_ERROR_IN_REDIS("Redis 데이터 접근 중 문제가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
     VAlUE_NOT_FOUND_IN_REDIS("해당 키에 데이터가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
+    DATA_INTEGRITY_VIOLATION_IN_JPA("JPA에서 데이터 무결성 위반.", HttpStatus.BAD_REQUEST),
+    ENTITY_NOT_FOUND_IN_JPA("JPA에서 엔티티를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    DATA_ACCESS_ERROR_IN_JPA("JPA에서 데이터베이스 접근 오류.", HttpStatus.INTERNAL_SERVER_ERROR),
+    UNEXPECTED_ERROR_IN_JPA("JPA에서 예상치 못한 오류 발생", HttpStatus.INTERNAL_SERVER_ERROR),
+
     NOT_FOUND_KEY_IN_REDIS("해당 키가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
 
     RABBITMQ_BASIC_REJECT_ERROR("메세지 삭제에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
