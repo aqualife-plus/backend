@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -19,6 +20,7 @@ import com.aqualifeplus.aqualifeplus.auth.service.AuthService;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorResponse;
 import com.aqualifeplus.aqualifeplus.config.SecurityConfig;
 import com.aqualifeplus.aqualifeplus.auth.dto.LoginRequestDto;
+import com.aqualifeplus.aqualifeplus.users.dto.PasswordChangeDto;
 import com.aqualifeplus.aqualifeplus.users.dto.SignupCheckDto;
 import com.aqualifeplus.aqualifeplus.users.dto.SignupResponseDto;
 import com.aqualifeplus.aqualifeplus.auth.dto.TokenResponseDto;
@@ -32,6 +34,7 @@ import com.aqualifeplus.aqualifeplus.auth.oauth.CustomOAuthUserService;
 import com.aqualifeplus.aqualifeplus.auth.oauth.OAuthSuccessHandler;
 import com.aqualifeplus.aqualifeplus.users.service.UsersService;
 import com.aqualifeplus.aqualifeplus.users.controller.UsersController;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -134,7 +137,8 @@ class UsersControllerTest {
                     Map<String, String> dto =
                             objectMapper.readValue(
                                     result.getResponse().getContentAsString(StandardCharsets.UTF_8),
-                                    new TypeReference<Map<String, String>>() {});
+                                    new TypeReference<Map<String, String>>() {
+                                    });
 
                     assertEquals(dto.get("errorKey"), "email");
                     assertEquals(dto.get("message"), "이메일을 입력해야 합니다.");
@@ -167,7 +171,8 @@ class UsersControllerTest {
                     Map<String, String> dto =
                             objectMapper.readValue(
                                     result.getResponse().getContentAsString(StandardCharsets.UTF_8),
-                                    new TypeReference<Map<String, String>>() {});
+                                    new TypeReference<Map<String, String>>() {
+                                    });
 
                     assertEquals(dto.get("errorKey"), "email");
                     assertEquals(dto.get("message"), "이메일 형식으로 입력해야 합니다.");
@@ -200,7 +205,8 @@ class UsersControllerTest {
                     Map<String, String> dto =
                             objectMapper.readValue(
                                     result.getResponse().getContentAsString(StandardCharsets.UTF_8),
-                                    new TypeReference<Map<String, String>>() {});
+                                    new TypeReference<Map<String, String>>() {
+                                    });
 
                     assertEquals(dto.get("errorKey"), "password");
                     assertEquals(dto.get("message"), "비밀번호를 입력해야 합니다.");
@@ -233,7 +239,8 @@ class UsersControllerTest {
                     Map<String, String> dto =
                             objectMapper.readValue(
                                     result.getResponse().getContentAsString(StandardCharsets.UTF_8),
-                                    new TypeReference<Map<String, String>>() {});
+                                    new TypeReference<Map<String, String>>() {
+                                    });
 
                     assertEquals(dto.get("errorKey"), "nickname");
                     assertEquals(dto.get("message"), "닉네임을 입력해야 합니다.");
@@ -266,7 +273,8 @@ class UsersControllerTest {
                     Map<String, String> dto =
                             objectMapper.readValue(
                                     result.getResponse().getContentAsString(StandardCharsets.UTF_8),
-                                    new TypeReference<Map<String, String>>() {});
+                                    new TypeReference<Map<String, String>>() {
+                                    });
 
                     assertEquals(dto.get("errorKey"), "phoneNumber");
                     assertEquals(dto.get("message"), "11자리의 숫자가 필요합니다.");
@@ -299,7 +307,8 @@ class UsersControllerTest {
                     Map<String, String> dto =
                             objectMapper.readValue(
                                     result.getResponse().getContentAsString(StandardCharsets.UTF_8),
-                                    new TypeReference<Map<String, String>>() {});
+                                    new TypeReference<Map<String, String>>() {
+                                    });
 
                     assertEquals(dto.get("errorKey"), "phoneNumber");
                     assertEquals(dto.get("message"), "11자리의 숫자가 필요합니다.");
@@ -335,13 +344,35 @@ class UsersControllerTest {
     }
 
     @Test
-    @DisplayName("회원가입 실패 -> save 메소드 error")
+    @DisplayName("회원가입 실패 -> save 메소드 error (기타 예외처리만 구현)")
     void failSignup_errorJPASaveMethod() throws Exception {
-        // TODO : 여기서부터 시작!
-        // TODO : save메소드 에러 처리 후 구현
         // given
+        UsersRequestDto usersRequestDto =
+                UsersRequestDto.builder()
+                        .email("1@1.com")
+                        .password("test password")
+                        .nickname("test nickname")
+                        .phoneNumber(null)
+                        .build();
         // when
+        when(usersService.signUp(any(UsersRequestDto.class)))
+                .thenThrow(new CustomException(ErrorCode.UNEXPECTED_ERROR_IN_JPA));
         // then
+        mockMvc.perform(post("/users/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(usersRequestDto)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class, result.getResolvedException()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
+                    assertEquals(response.getErrorCode(), ErrorCode.UNEXPECTED_ERROR_IN_JPA);
+                    assertEquals(response.getStatus(), HttpStatus.INTERNAL_SERVER_ERROR);
+                    assertEquals(response.getMessage(), "JPA에서 예상치 못한 오류 발생");
+                })
+                .andDo(print());
     }
 
 
@@ -372,15 +403,64 @@ class UsersControllerTest {
     }
 
     @Test
-    @DisplayName("이메일 중복체크 실패 -> valid error")
-    void failCheckEmail_validError() {
-        // TODO
+    @DisplayName("이메일 중복체크 실패 -> 빈칸 valid error")
+    void failCheckEmail_blankValidError() throws Exception {
         // given
+        SignupCheckDto signupCheckDto =
+                SignupCheckDto.builder()
+                        .email(" ")
+                        .build();
         // when
         // then
+        mockMvc.perform(post("/users/check-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(signupCheckDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(
+                        MethodArgumentNotValidException.class,
+                        result.getResolvedException()))
+                .andExpect(result -> {
+                    Map<String, String> dto =
+                            objectMapper.readValue(
+                                    result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                                    new TypeReference<Map<String, String>>() {
+                                    });
+
+                    assertEquals(dto.get("errorKey"), "email");
+                    assertEquals(dto.get("message"), "값이 필요합니다.");
+                })
+                .andDo(print());
     }
 
+    @Test
+    @DisplayName("이메일 중복체크 실패 -> 이메일 format valid error")
+    void failCheckEmail_emailFormatValidError() throws Exception {
+        // given
+        SignupCheckDto signupCheckDto =
+                SignupCheckDto.builder()
+                        .email("123")
+                        .build();
+        // when
+        // then
+        mockMvc.perform(post("/users/check-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(signupCheckDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(
+                        MethodArgumentNotValidException.class,
+                        result.getResolvedException()))
+                .andExpect(result -> {
+                    Map<String, String> dto =
+                            objectMapper.readValue(
+                                    result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                                    new TypeReference<Map<String, String>>() {
+                                    });
 
+                    assertEquals(dto.get("errorKey"), "email");
+                    assertEquals(dto.get("message"), "email 형태여야 합니다.");
+                })
+                .andDo(print());
+    }
 
     @Test
     @DisplayName("이메일 중복체크 실패 -> 이메일 이미 존재")
@@ -535,7 +615,7 @@ class UsersControllerTest {
     @Test
     @DisplayName("회원정보 update 실패 -> valid error")
     @WithMockUser
-    void failUpdateMyInfo_DtoValidError() throws Exception {
+    void failUpdateMyInfo_dtoValidError() throws Exception {
         //given
         String accessTokenExample = "Bearer accessTokenExample";
         UsersResponseDto afterResponseDto = UsersResponseDto.builder()
@@ -557,57 +637,273 @@ class UsersControllerTest {
     }
 
     @Test
-    @DisplayName("회원정보 update 실패 -> update 메소드 error")
+    @DisplayName("회원정보 update 실패  -> 해당 회원이 없다.")
     @WithMockUser
-    void failUpdateMyInfo_errorJPAUpdateMethod() {
+    void failCheckEmail_notMatchUsers() throws Exception {
         // given
+        UsersResponseDto afterResponseDto =
+                UsersResponseDto.builder()
+                        .nickname("test nickname")
+                        .phoneNumber(null)
+                        .build();
+
         // when
+        when(usersService.updateMyInfo(any(UsersResponseDto.class)))
+                .thenThrow(new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
         // then
+        mockMvc.perform(patch("/users/my-info")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(afterResponseDto)))
+                .andExpect(status().isNotFound())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class, result.getResolvedException()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
+                    assertEquals(response.getErrorCode(), ErrorCode.NOT_FOUND_MEMBER);
+                    assertEquals(response.getStatus(), HttpStatus.NOT_FOUND);
+                    assertEquals(response.getMessage(), "존재하지 않는 회원입니다.");
+                })
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("회원정보 update 실패 -> update 메소드 error (기타 모든 예외)")
+    @WithMockUser
+    void failUpdateMyInfo_errorJPAUpdateMethod() throws Exception {
+        // given
+        UsersResponseDto usersResponseDto =
+                UsersResponseDto.builder()
+                        .nickname("test nickname")
+                        .phoneNumber(null)
+                        .build();
+        // when
+        when(usersService.updateMyInfo(any(UsersResponseDto.class)))
+                .thenThrow(new CustomException(ErrorCode.UNEXPECTED_ERROR_IN_JPA));
+        // then
+        mockMvc.perform(patch("/users/my-info")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(usersResponseDto)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class, result.getResolvedException()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
+                    assertEquals(response.getErrorCode(), ErrorCode.UNEXPECTED_ERROR_IN_JPA);
+                    assertEquals(response.getStatus(), HttpStatus.INTERNAL_SERVER_ERROR);
+                    assertEquals(response.getMessage(), "JPA에서 예상치 못한 오류 발생");
+                })
+                .andDo(print());
     }
 
     @Test
     @DisplayName("비밀번호 수정 성공")
     @WithMockUser
-    void successChangePassword() {
+    void successChangePassword() throws Exception {
         // given
+        PasswordChangeDto passwordChangeDto =
+                PasswordChangeDto.builder()
+                        .oldPassword("before pw")
+                        .changePassword("after pw")
+                        .build();
+        SuccessDto successDto =
+                SuccessDto.builder()
+                        .success(true)
+                        .build();
         // when
+        when(usersService.changePassword(any(PasswordChangeDto.class)))
+                .thenReturn(successDto);
+
         // then
+        mockMvc.perform(patch("/users/change-password")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(passwordChangeDto)))
+                .andExpect(status().isOk())
+                .andExpect(result -> {
+                    SuccessDto dto = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            SuccessDto.class);
+
+                    assertTrue(dto.isSuccess());
+                })
+                .andDo(print());
     }
 
     @Test
-    @DisplayName("비밀번호 수정 실패 -> valid errpr")
+    @DisplayName("비밀번호 수정 실패 -> 현재 비번 blank valid error")
     @WithMockUser
-    void failChangePassword_validError() {
+    void failChangePassword_beforePasswordValidError() throws Exception {
         // given
+        PasswordChangeDto passwordChangeDto =
+                PasswordChangeDto.builder()
+                        .oldPassword(" ")
+                        .changePassword("after pw")
+                        .build();
         // when
         // then
+        mockMvc.perform(patch("/users/change-password")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(passwordChangeDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(
+                        MethodArgumentNotValidException.class,
+                        result.getResolvedException()
+                ))
+                .andExpect(result -> {
+                    Map<String, String> dto =
+                            objectMapper.readValue(
+                                    result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                                    new TypeReference<Map<String, String>>() {
+                                    });
+
+                    assertEquals(dto.get("errorKey"), "oldPassword");
+                    assertEquals(dto.get("message"), "지금 비밀번호를 입력해주세요.");
+                });
+    }
+
+    @Test
+    @DisplayName("비밀번호 수정 실패 -> 수정할 비번 blank valid error")
+    @WithMockUser
+    void failChangePassword_changePasswordValidError() throws Exception {
+        // given
+        PasswordChangeDto passwordChangeDto =
+                PasswordChangeDto.builder()
+                        .oldPassword("before pw")
+                        .changePassword(" ")
+                        .build();
+        // when
+        // then
+        mockMvc.perform(patch("/users/change-password")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(passwordChangeDto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertInstanceOf(
+                        MethodArgumentNotValidException.class,
+                        result.getResolvedException()
+                ))
+                .andExpect(result -> {
+                    Map<String, String> dto =
+                            objectMapper.readValue(
+                                    result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                                    new TypeReference<Map<String, String>>() {
+                                    });
+
+                    assertEquals(dto.get("errorKey"), "changePassword");
+                    assertEquals(dto.get("message"), "바꿀 비밀번호를 입력해주세요.");
+                });
     }
 
     @Test
     @DisplayName("비밀번호 수정 실패 -> token 만료")
     @WithMockUser
-    void failChangePassword_invalidAccessToken() {
+    void failChangePassword_invalidAccessToken() throws Exception {
         // given
+        PasswordChangeDto passwordChangeDto =
+                PasswordChangeDto.builder()
+                        .oldPassword("before pw")
+                        .changePassword("after pw")
+                        .build();
         // when
+        when(usersService.changePassword(any(PasswordChangeDto.class)))
+                .thenThrow(new CustomException(ErrorCode.EXPIRED_TOKEN));
+
         // then
+        mockMvc.perform(patch("/users/change-password")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(passwordChangeDto)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class,
+                        result.getResolvedException()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
+
+                    assertEquals(response.getErrorCode(), ErrorCode.EXPIRED_TOKEN);
+                    assertEquals(response.getStatus(), HttpStatus.UNAUTHORIZED);
+                    assertEquals(response.getMessage(), "만료된 토큰입니다.");
+                })
+                .andDo(print());
     }
 
     @Test
     @DisplayName("비밀번호 수정 실패 -> 일치하는 유저가 없음")
     @WithMockUser
-    void failChangePassword_notMatchUsers() {
+    void failChangePassword_notMatchUsers() throws Exception {
         // given
+        PasswordChangeDto passwordChangeDto =
+                PasswordChangeDto.builder()
+                        .oldPassword("before pw")
+                        .changePassword("after pw")
+                        .build();
         // when
+        when(usersService.changePassword(any(PasswordChangeDto.class)))
+                .thenThrow(new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
         // then
+        mockMvc.perform(patch("/users/change-password")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(passwordChangeDto)))
+                .andExpect(status().isNotFound())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class,
+                        result.getResolvedException()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
+
+                    assertEquals(response.getErrorCode(), ErrorCode.NOT_FOUND_MEMBER);
+                    assertEquals(response.getStatus(), HttpStatus.NOT_FOUND);
+                    assertEquals(response.getMessage(), "존재하지 않는 회원입니다.");
+                })
+                .andDo(print());
     }
 
     @Test
     @DisplayName("비밀번호 수정 실패 -> 이전 비밀번호와 유저의 비밀번호가 일치하지 않음")
     @WithMockUser
-    void failChangePassword_notMatchPasswordInputPassword() {
+    void failChangePassword_notMatchPasswordInputPassword() throws Exception {
         // given
+        PasswordChangeDto passwordChangeDto =
+                PasswordChangeDto.builder()
+                        .oldPassword("before pw")
+                        .changePassword("after pw")
+                        .build();
+        SuccessDto successDto =
+                SuccessDto.builder()
+                        .success(false)
+                        .build();
         // when
+        when(usersService.changePassword(any(PasswordChangeDto.class)))
+                .thenReturn(successDto);
+
         // then
+        mockMvc.perform(patch("/users/change-password")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(passwordChangeDto)))
+                .andExpect(status().isOk())
+                .andExpect(result -> {
+                    SuccessDto dto = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            SuccessDto.class);
+
+                    assertFalse(dto.isSuccess());
+                })
+                .andDo(print());
     }
 
     @Test
@@ -638,26 +934,86 @@ class UsersControllerTest {
 
     @Test
     @DisplayName("회원 delete 실패 -> token 만료")
-    void failDeleteUsers_invalidAccessToken() {
+    @WithMockUser
+    void failDeleteUsers_invalidAccessToken() throws Exception {
         // given
         // when
+        when(usersService.deleteUser())
+                .thenThrow(new CustomException(ErrorCode.EXPIRED_TOKEN));
+
         // then
+        mockMvc.perform(delete("/users/withdrawal")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class,
+                        result.getResolvedException()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
+
+                    assertEquals(response.getErrorCode(), ErrorCode.EXPIRED_TOKEN);
+                    assertEquals(response.getStatus(), HttpStatus.UNAUTHORIZED);
+                    assertEquals(response.getMessage(), "만료된 토큰입니다.");
+                })
+                .andDo(print());
     }
 
     @Test
     @DisplayName("회원 delete 실패 -> 일치하는 유저가 없음")
-    void failDeleteUsers_notMatchUsers() {
+    @WithMockUser
+    void failDeleteUsers_notMatchUsers() throws Exception {
         // given
         // when
+        when(usersService.deleteUser())
+                .thenThrow(new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
         // then
+        mockMvc.perform(delete("/users/withdrawal")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class,
+                        result.getResolvedException()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
+
+                    assertEquals(response.getErrorCode(), ErrorCode.NOT_FOUND_MEMBER);
+                    assertEquals(response.getStatus(), HttpStatus.NOT_FOUND);
+                    assertEquals(response.getMessage(), "존재하지 않는 회원입니다.");
+                })
+                .andDo(print());
     }
 
     @Test
     @DisplayName("회원 delete 실패 -> delete method error")
-    void failDeleteUsers_errorJPADeleteMethod() {
+    @WithMockUser
+    void failDeleteUsers_errorJPADeleteMethod() throws Exception {
         // given
         // when
+        when(usersService.deleteUser())
+                .thenThrow(new CustomException(ErrorCode.UNEXPECTED_ERROR_IN_JPA));
         // then
+        mockMvc.perform(delete("/users/withdrawal")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class, result.getResolvedException()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
+                    assertEquals(response.getErrorCode(), ErrorCode.UNEXPECTED_ERROR_IN_JPA);
+                    assertEquals(response.getStatus(), HttpStatus.INTERNAL_SERVER_ERROR);
+                    assertEquals(response.getMessage(), "JPA에서 예상치 못한 오류 발생");
+                })
+                .andDo(print());
     }
 
     @Test
@@ -688,25 +1044,86 @@ class UsersControllerTest {
 
     @Test
     @DisplayName("회원 logout 실패 -> token 만료")
-    void failLogout_invalidAccessToken() {
+    @WithMockUser
+    void failLogout_invalidAccessToken() throws Exception {
         // given
         // when
+        when(usersService.logout())
+                .thenThrow(new CustomException(ErrorCode.EXPIRED_TOKEN));
+
         // then
+        mockMvc.perform(post("/users/logout")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class,
+                        result.getResolvedException()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
+
+                    assertEquals(response.getErrorCode(), ErrorCode.EXPIRED_TOKEN);
+                    assertEquals(response.getStatus(), HttpStatus.UNAUTHORIZED);
+                    assertEquals(response.getMessage(), "만료된 토큰입니다.");
+                })
+                .andDo(print());
     }
 
     @Test
     @DisplayName("회원 logout 실패 -> 일치하는 유저가 없음")
-    void failLogout_notMatchUsers() {
+    @WithMockUser
+    void failLogout_notMatchUsers() throws Exception {
         // given
         // when
+        when(usersService.logout())
+                .thenThrow(new CustomException(ErrorCode.NOT_FOUND_MEMBER));
+
         // then
+        mockMvc.perform(post("/users/logout")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class,
+                        result.getResolvedException()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
+
+                    assertEquals(response.getErrorCode(), ErrorCode.NOT_FOUND_MEMBER);
+                    assertEquals(response.getStatus(), HttpStatus.NOT_FOUND);
+                    assertEquals(response.getMessage(), "존재하지 않는 회원입니다.");
+                })
+                .andDo(print());
     }
 
     @Test
     @DisplayName("회원 logout 실패 -> redis delete error")
-    void failLogout_errorRedisDeleteError() {
+    @WithMockUser
+    void failLogout_errorRedisDeleteError() throws Exception {
         // given
         // when
+        when(usersService.logout())
+                .thenThrow(new CustomException(ErrorCode.NOT_FOUND_KEY_IN_REDIS));
         // then
+        mockMvc.perform(post("/users/logout")
+                        .header("Authorization", "Bearer accessToken")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(result -> assertInstanceOf(
+                        CustomException.class,
+                        result.getResolvedException()))
+                .andExpect(result -> {
+                    ErrorResponse response = objectMapper.readValue(
+                            result.getResponse().getContentAsString(StandardCharsets.UTF_8),
+                            ErrorResponse.class);
+
+                    assertEquals(response.getErrorCode(), ErrorCode.NOT_FOUND_KEY_IN_REDIS);
+                    assertEquals(response.getStatus(), HttpStatus.NOT_FOUND);
+                    assertEquals(response.getMessage(), "해당 키가 존재하지 않습니다.");})
+                .andDo(print());
     }
 }

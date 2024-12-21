@@ -105,6 +105,15 @@ public class RedisService {
         }
     }
 
+    public void deleteData(RedisTemplate<String, String> redisTemplate, String key) {
+        if (key != null && !key.isEmpty()) {
+            redisTemplate.delete(key);
+            log.info("삭제된 키: " + key);
+        } else {
+            throw new CustomException(ErrorCode.NOT_FOUND_KEY_IN_REDIS);
+        }
+    }
+
     private static final int ADAY = 60 * 60 * 24;
 
     public String makeKey(Users users, Fishbowl fishbowl, Long reserveId, String reserveType, String onOff) {

@@ -3,6 +3,7 @@ package com.aqualifeplus.aqualifeplus.users.service;
 import com.aqualifeplus.aqualifeplus.auth.jwt.JwtService;
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
+import com.aqualifeplus.aqualifeplus.common.redis.RedisService;
 import com.aqualifeplus.aqualifeplus.users.dto.PasswordChangeDto;
 import com.aqualifeplus.aqualifeplus.users.dto.SignupCheckDto;
 import com.aqualifeplus.aqualifeplus.users.dto.SignupResponseDto;
@@ -22,10 +23,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UsersServiceImpl implements UsersService{
+public class UsersServiceImpl implements UsersService {
     private final UsersRepository usersRepository;
-    private final RedisTemplate<String, String> redisTemplateForTokens;
     private final JwtService jwtService;
+    private final RedisService redisService;
+    private final RedisTemplate<String, String> redisTemplateForTokens;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -63,7 +65,7 @@ public class UsersServiceImpl implements UsersService{
     @Override
     @Transactional
     public SuccessDto updateMyInfo(UsersResponseDto usersResponseDto) {
-        Users users =  usersRepository.findByEmail(jwtService.getEmail())
+        Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
         users.setUpdateData(usersResponseDto);
@@ -74,7 +76,7 @@ public class UsersServiceImpl implements UsersService{
     @Override
     @Transactional
     public SuccessDto changePassword(PasswordChangeDto passwordUpdateRequestDto) {
-        Users users =  usersRepository.findByEmail(jwtService.getEmail())
+        Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
         if (passwordEncoder.matches(
@@ -87,15 +89,9 @@ public class UsersServiceImpl implements UsersService{
         return getSuccessDto(false);
     }
 
-    private SuccessDto getSuccessDto(boolean success) {
-        return SuccessDto.builder()
-                .success(success)
-                .build();
-    }
-
     @Override
     public SuccessDto deleteUser() {
-        Users users =  usersRepository.findByEmail(jwtService.getEmail())
+        Users users = usersRepository.findByEmail(jwtService.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
 
         usersRepository.delete(users);
@@ -105,10 +101,9 @@ public class UsersServiceImpl implements UsersService{
 
     @Override
     public SuccessDto logout() {
-        boolean booleanValue = Boolean.TRUE.equals(
-                redisTemplateForTokens.delete("users : refreshToken : " + jwtService.getEmail()));
+        redisService.deleteData(redisTemplateForTokens, "users : refreshToken : " + jwtService.getEmail());
 
-        return getSuccessDto(booleanValue);
+        return getSuccessDto(true);
     }
 
     @Override
@@ -116,5 +111,11 @@ public class UsersServiceImpl implements UsersService{
         return usersRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER))
                 .getUserId();
+    }
+
+    private SuccessDto getSuccessDto(boolean success) {
+        return SuccessDto.builder()
+                .success(success)
+                .build();
     }
 }

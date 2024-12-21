@@ -15,7 +15,7 @@ import org.checkerframework.checker.signature.qual.BinaryName;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SignupCheckDto {
-    @Email(message = "email 형태여야 합니다.")
     @NotBlank(message = "값이 필요합니다.")
+    @Email(message = "email 형태여야 합니다.")
     private String email;
 }
