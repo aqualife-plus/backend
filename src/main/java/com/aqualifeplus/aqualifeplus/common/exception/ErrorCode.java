@@ -44,6 +44,11 @@ public enum ErrorCode {
     DATA_ACCESS_ERROR_IN_JPA("JPA에서 데이터베이스 접근 오류.", HttpStatus.INTERNAL_SERVER_ERROR),
     UNEXPECTED_ERROR_IN_JPA("JPA에서 예상치 못한 오류 발생", HttpStatus.INTERNAL_SERVER_ERROR),
     NOT_CORRECT_EXPIRED_KEY_IN_REDIS("의도하지 않은 Key입니다.", HttpStatus.BAD_REQUEST),
+    ERROR_DO_CREATE_400_OR_500_IN_REALTIME_FIREBASE("firebase RealTime DB에서 Create중 Error가 발생했습니다.", null),
+    ERROR_DO_UPDATE_400_OR_500_IN_REALTIME_FIREBASE("firebase RealTime DB에서 Update중 Error가 발생했습니다.", null),
+    ERROR_DO_DELETE_400_OR_500_IN_REALTIME_FIREBASE("firebase RealTime DB에서 Delete중 Error가 발생했습니다.", null),
+    ERROR_DO_LOAD_400_OR_500_IN_REALTIME_FIREBASE("firebase RealTime DB에서 Load(Get)중 Error가 발생했습니다.", null),
+    UNEXPECTED_ERROR_IN_REALTIME_FIREBASE("Firebase RealTime DB에서 예상치 못한 오류가 발생했습니다.", null),
 
     NOT_FOUND_KEY_IN_REDIS("해당 키가 존재하지 않습니다.", HttpStatus.NOT_FOUND),
 
