@@ -2,7 +2,6 @@ package com.aqualifeplus.aqualifeplus.common.redis;
 
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
-import com.aqualifeplus.aqualifeplus.firebase.repository.FirebaseRealTimeRepository;
 import com.aqualifeplus.aqualifeplus.firebase.service.FCMService;
 import com.aqualifeplus.aqualifeplus.users.entity.Users;
 import com.aqualifeplus.aqualifeplus.users.repository.UsersRepository;
@@ -45,7 +44,7 @@ public class ExpiredEventListener implements MessageListener {
         } else if (key.contains("light")) {
             updateOnOffUseReserve(key, "lightState");
         } else {
-            throw new RuntimeException("예상치 못한 데이터입니다.");
+            throw new CustomException(ErrorCode.NOT_CORRECT_EXPIRED_KEY_IN_REDIS);
         }
     }
 

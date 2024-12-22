@@ -64,8 +64,10 @@ public class MessageQueueService {
         try {
             // 메시지를 '<>'로 나눈 후 JSON 부분만 추출
             String[] parts = message.split("<>", 3);
+            //session 정보
+            String sessionData = parts[0];
             // 송신할 경로 정보
-            String sessionPath = parts[1];
+            String path = parts[1];
             // JSON 데이터
             String jsonPayload = parts[2];
 
@@ -73,7 +75,7 @@ public class MessageQueueService {
             Matcher matcher = pattern.matcher(jsonPayload);
 
             // Firebase 경로 str -> 배열
-            String[] sessionIdArr = sessionPath.split("/");
+            String[] pathArr = path.split("/");
 
             if (matcher.find()) {
                 String type = matcher.group(1); // key
@@ -82,14 +84,14 @@ public class MessageQueueService {
                 switch (type) {
                     case "co2State", "lightState" ->
                             firebaseRealTimeRepository.updateOnOff(
-                                    sessionIdArr[0],
-                                    sessionIdArr[1],
+                                    pathArr[0],
+                                    pathArr[1],
                                     type,
                                     Boolean.parseBoolean(messages));
                     case "filter" ->
                         firebaseRealTimeRepository.updateFilter(
-                                sessionIdArr[0],
-                                sessionIdArr[1]);
+                                pathArr[0],
+                                pathArr[1]);
                 }
 
                 log.info("Data saved to Firebase successfully.");

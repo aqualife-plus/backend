@@ -10,6 +10,7 @@ import static com.aqualifeplus.aqualifeplus.common.exception.ErrorCode.THREAD_IN
 import com.aqualifeplus.aqualifeplus.common.aop.NoLogging;
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.firebase.dto.FishbowlRealTimeDto;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -64,7 +65,11 @@ public class ChatHandler extends TextWebSocketHandler {
         try {
             // JSON 파싱
             ObjectMapper objectMapper = new ObjectMapper();
-            Map<String, Object> jsonMap = objectMapper.readValue(payload, Map.class);
+            Map<String, Object> jsonMap =
+                    objectMapper.readValue(
+                            payload,
+                            new TypeReference<Map<String, Object>>() {
+                            });
 
             // JSON 데이터를 String으로 변환
             String fishbowlToken = jsonMap.get("fishbowlToken").toString();
@@ -89,7 +94,7 @@ public class ChatHandler extends TextWebSocketHandler {
             // 메시지를 RabbitMQ 큐로 전송
             messageQueueService.sendMessageToQueue(session + "<>" + path + "<>" + formattedMessage);
         } catch (Exception e) {
-            log.info("Failed to parse JSON: " + e.getMessage());
+            log.info("Failed to parse JSON: {}" ,e.getMessage());
             session.sendMessage(new TextMessage("Invalid JSON format"));
         }
     }
@@ -97,15 +102,15 @@ public class ChatHandler extends TextWebSocketHandler {
     private static boolean checkMessage(WebSocketSession session, Map<String, Object> jsonMap, String fishbowlToken)
             throws IOException {
         if (jsonMap.get("type") == null && jsonMap.get("content") == null) {
-            log.info("in : " + fishbowlToken);
+            log.info("in : {}", fishbowlToken);
             return true;
         } else if (jsonMap.get("type") == null) {
             directMessageToClientForError("type not found in websocket message", session);
-            log.warn("type not found in websocket message");
+            log.error("type not found in websocket message");
             return true;
         } else if (jsonMap.get("content") == null) {
             directMessageToClientForError("content not found in websocket message", session);
-            log.warn("content not found in websocket message");
+            log.error("content not found in websocket message");
             return true;
         }
         return false;

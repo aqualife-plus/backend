@@ -31,6 +31,7 @@ public class FirebaseRealTimeRepository {
 
     public void updateOnOff(String userId, String fishbowlId, String type, boolean onOff) {
         if (!(type.equals("co2State") || type.equals("lightState"))) {
+            log.error("error check");
             throw new CustomException(ErrorCode.NOT_MATCH_UPDATE_COLUMN);
         }
 
@@ -42,22 +43,13 @@ public class FirebaseRealTimeRepository {
                         .child(type);
 
         userRef.setValue(onOff, (error, databaseReference) -> {
-            if (error != null && type.equals("co2State")) {
-//                throw new CustomException(ErrorCode.FAIL_UPDATE_NOW_CO2);
-                log.error("co2 update 중 에러");
+            if (error != null) {
+                log.error("{} update 중 에러", type);
 
                 String path = userId + "/" + fishbowlId;
                 String formattedMessage = "Type: " + type + ", Message: " + onOff;
 
-                dlxHandler.sendMessageToDlx("" + "<>" + path + "<>" + formattedMessage);
-            } else if (error != null) {
-//                throw new CustomException(ErrorCode.FAIL_UPDATE_NOW_LIGHT);
-                log.error("light update 중 에러");
-
-                String path = userId + "/" + fishbowlId;
-                String formattedMessage = "Type: " + type + ", Message: " + onOff;
-
-                dlxHandler.sendMessageToDlx("" + "<>" + path + "<>" + formattedMessage);
+                dlxHandler.sendMessageToDlx("retry" + "<>" + path + "<>" + formattedMessage);
             }
         });
     }
@@ -72,13 +64,12 @@ public class FirebaseRealTimeRepository {
 
         userRef.setValue(true, (error, databaseReference) -> {
             if (error != null) {
-//                throw new CustomException(ErrorCode.FAIL_UPDATE_NOW_FILTER);
                 log.error("filter update 중 에러");
 
                 String path = userId + "/" + fishbowlId;
                 String formattedMessage = "Type: " + "filter" + ", Message: " + "on";
 
-                dlxHandler.sendMessageToDlx("" + "<>" + path + "<>" + formattedMessage);
+                dlxHandler.sendMessageToDlx("retry" + "<>" + path + "<>" + formattedMessage);
             }
         });
     }
