@@ -2,8 +2,10 @@ package com.aqualifeplus.aqualifeplus.co2.dto;
 
 import com.aqualifeplus.aqualifeplus.co2.entity.Co2;
 import java.time.LocalTime;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Builder

@@ -5,9 +5,11 @@ import com.aqualifeplus.aqualifeplus.common.deserializer.LocalTimeDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalTime;
+import lombok.Builder;
 import lombok.Getter;
 
 @Getter
+@Builder
 public class Co2RequestDto {
     @NotNull(message = "예약 설정값이 필요합니다.")
     @JsonDeserialize(using = CustomBooleanDeserializer.class)
