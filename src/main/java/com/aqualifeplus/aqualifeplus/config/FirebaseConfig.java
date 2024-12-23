@@ -1,6 +1,8 @@
 package com.aqualifeplus.aqualifeplus.config;
 
 
+import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
+import com.aqualifeplus.aqualifeplus.common.exception.ErrorCode;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
@@ -90,7 +92,7 @@ public class FirebaseConfig {
             credentials.refreshIfExpired();
             return credentials.getAccessToken().getTokenValue();
         } catch (IOException e) {
-            throw new RuntimeException("Failed to obtain access token from Firebase credentials", e);
+            throw new CustomException(ErrorCode.FAIL_FIREBASE_CREDENTIALS);
         }
     }
 

@@ -29,6 +29,10 @@ public class PhServiceImpl implements PhService{
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
         String fishbowlId = jwtService.getFishbowlToken();
 
+        if (fishbowlId == null) {
+            throw new CustomException(ErrorCode.NULL_ERROR_FISHBOWL_TOKEN);
+        }
+
         String url = users.getUserId() + "/" + fishbowlId + "/" + "ph";
         Map<String, Double> settingPhLimitMaps = new HashMap<>();
         settingPhLimitMaps.put("warningMaxPh",
