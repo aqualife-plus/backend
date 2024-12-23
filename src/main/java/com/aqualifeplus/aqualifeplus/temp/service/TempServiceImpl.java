@@ -30,6 +30,10 @@ public class TempServiceImpl implements TempService{
                 .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_MEMBER));
         String fishbowlId = jwtService.getFishbowlToken();
 
+        if (fishbowlId == null) {
+            throw new CustomException(ErrorCode.NULL_ERROR_FISHBOWL_TOKEN);
+        }
+
         String url = users.getUserId() + "/" + fishbowlId + "/" + "temp";
         Map<String, Double> settingTempLimitMaps = new HashMap<>();
         settingTempLimitMaps.put("tempStay",
