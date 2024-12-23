@@ -3,16 +3,20 @@ package com.aqualifeplus.aqualifeplus.filter.dto;
 import com.aqualifeplus.aqualifeplus.common.deserializer.FilterDayDeserializer;
 import com.aqualifeplus.aqualifeplus.common.deserializer.FilterRangeDeserializer;
 import com.aqualifeplus.aqualifeplus.common.deserializer.LocalTimeDeserializer;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalTime;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class FilterRequestDto {
     @NotNull(message = "설정할 요일데이터가 필요합니다.")
     @JsonDeserialize(using = FilterDayDeserializer.class)
@@ -22,5 +26,6 @@ public class FilterRequestDto {
     private Integer filterRange;
     @NotNull(message = "설정할 시간이 필요합니다.")
     @JsonDeserialize(using = LocalTimeDeserializer.class)
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime filterTime;
 }

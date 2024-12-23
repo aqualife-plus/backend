@@ -24,7 +24,6 @@ public class FilterController {
 
     @PutMapping
     public ResponseEntity<?> updateFilter(@Valid @RequestBody FilterRequestDto filterRequestDto) {
-        System.out.println(filterRequestDto.getFilterRange());
         return ResponseEntity.ok(filterService.updateFilter(filterRequestDto));
     }
 }

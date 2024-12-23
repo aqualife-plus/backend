@@ -8,5 +8,5 @@ import jakarta.validation.Valid;
 public interface FilterService {
     FilterResponseDto getFilter();
 
-    UpdateFilterResponseDto updateFilter(@Valid FilterRequestDto filterRequestDto);
+    UpdateFilterResponseDto updateFilter(FilterRequestDto filterRequestDto);
 }
