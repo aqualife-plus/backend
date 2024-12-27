@@ -41,7 +41,7 @@ public class SecurityConfig {
                                 "/users/signup",
                                 "/auth/google/login", "/oauth2/authorization/google/**",
                                 "/auth/naver/login", "/oauth2/authorization/naver/**",
-                                "/users/check-email").permitAll()
+                                "/users/check-email", "/ws").permitAll()
                         .anyRequest().authenticated()
                 )
                 .httpBasic(httpBasic -> {})

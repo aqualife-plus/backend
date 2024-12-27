@@ -26,12 +26,12 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(chatHandler(), "/ws")
-                .addInterceptors(new JwtHandshakeInterceptor(jwtService, usersService))
+//                .addInterceptors(new JwtHandshakeInterceptor(jwtService, usersService))
                 .setAllowedOrigins("*");
     }
 
     @Bean
     public ChatHandler chatHandler() {
-        return new ChatHandler(messageQueueService);  // 생성자에 channel과 messageQueueService 전달
+        return new ChatHandler(messageQueueService, jwtService, usersService);  // 생성자에 channel과 messageQueueService 전달
     }
 }

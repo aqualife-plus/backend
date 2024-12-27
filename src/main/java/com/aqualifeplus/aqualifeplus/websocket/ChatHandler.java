@@ -7,10 +7,13 @@ import static com.aqualifeplus.aqualifeplus.common.exception.ErrorCode.NOT_MATCH
 import static com.aqualifeplus.aqualifeplus.common.exception.ErrorCode.PERMISSION_DENIED_FIREBASE_SERVER;
 import static com.aqualifeplus.aqualifeplus.common.exception.ErrorCode.THREAD_INTERRUPTED;
 
+import com.aqualifeplus.aqualifeplus.auth.jwt.JwtService;
 import com.aqualifeplus.aqualifeplus.common.aop.NoLogging;
 import com.aqualifeplus.aqualifeplus.common.exception.CustomException;
 import com.aqualifeplus.aqualifeplus.firebase.dto.FishbowlRealTimeDto;
+import com.aqualifeplus.aqualifeplus.users.service.UsersService;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -40,6 +43,8 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 @RequiredArgsConstructor
 public class ChatHandler extends TextWebSocketHandler {
     private final MessageQueueService messageQueueService;
+    private final JwtService jwtService;
+    private final UsersService usersService;
     private final Set<WebSocketSession> sessions = new HashSet<>();
     private final Map<WebSocketSession, SessionInfoDto> map = new HashMap<>();
 
@@ -47,20 +52,42 @@ public class ChatHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessions.add(session);
 
-        Long userId = (Long) session.getAttributes().get("userId");
-        if (userId != null) {
-            map.put(session, new SessionInfoDto(userId, "none"));
-            messageToClientsFirstConnect(String.valueOf(userId));
-            log.info("Session established for userId : " + userId);
-        } else {
-            session.close(CloseStatus.BAD_DATA);
-            log.warn("User ID not found in session attributes.");
-        }
+//        Long userId = (Long) session.getAttributes().get("userId");
+//        if (userId != null) {
+//            map.put(session, new SessionInfoDto(userId, "none"));
+//            messageToClientsFirstConnect(String.valueOf(userId));
+//            log.info("Session established for userId : " + userId);
+//        } else {
+//            session.close(CloseStatus.BAD_DATA);
+//            log.warn("User ID not found in session attributes.");
+//        }
     }
 
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
+        System.out.println("payload : " + payload);
+        Map<String, String> authMap =
+                new ObjectMapper().readValue(payload, new TypeReference<Map<String, String>>() {
+                });
+
+        if ("AUTH".equals(authMap.get("type"))) {
+            sessions.add(session);
+            String accessToken = authMap.get("accessToken");
+            System.out.println("type : " + authMap.get("type"));
+            System.out.println("accessToken : " + accessToken);
+            if (!jwtService.isTokenExpired(accessToken)) {
+
+                Long userId =
+                        usersService.getId(jwtService.extractEmail(accessToken));
+                map.put(session, new SessionInfoDto(userId, "none"));
+                messageToClientsFirstConnect(String.valueOf(userId));
+                log.info("Session established for userId : " + userId);
+                return;
+            } else {
+                session.close(CloseStatus.NOT_ACCEPTABLE);
+            }
+        }
 
         try {
             // JSON 파싱
@@ -94,7 +121,7 @@ public class ChatHandler extends TextWebSocketHandler {
             // 메시지를 RabbitMQ 큐로 전송
             messageQueueService.sendMessageToQueue(session + "<>" + path + "<>" + formattedMessage);
         } catch (Exception e) {
-            log.info("Failed to parse JSON: {}" ,e.getMessage());
+            log.info("Failed to parse JSON: {}", e.getMessage());
             session.sendMessage(new TextMessage("Invalid JSON format"));
         }
     }
