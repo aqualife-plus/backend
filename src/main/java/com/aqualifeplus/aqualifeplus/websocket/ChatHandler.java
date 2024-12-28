@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.xml.crypto.dsig.spec.HMACParameterSpec;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -102,11 +103,13 @@ public class ChatHandler extends TextWebSocketHandler {
             String fishbowlToken = jsonMap.get("fishbowlToken").toString();
             if (fishbowlToken.equals("none")) {
                 setFishbowlIdInSession(session, "none");
+                messageToClientsFirstConnect(String.valueOf(map.get(session).getUserId()));
                 log.info("User unSelected fishbowl");
                 return;
             }
 
             setFishbowlIdInSession(session, fishbowlToken);
+            messageToClientsFirstConnect(String.valueOf(map.get(session).getUserId()), fishbowlToken);
             log.info("User selected fishbowl: " + fishbowlToken);
 
             if (checkMessage(session, jsonMap, fishbowlToken)) {
@@ -222,13 +225,45 @@ public class ChatHandler extends TextWebSocketHandler {
         }
     }
 
+    public void messageToClientsFirstConnect(String userId, String fishbowlToken) throws IOException {
+        for (WebSocketSession session : sessions) {
+            String sessionUserId = String.valueOf(map.get(session).getUserId());
+            Map<String, FishbowlRealTimeDto> data = getData(userId);
+            log.info("session check : " + (sessionUserId != null && sessionUserId.equals(userId)));
+            if (sessionUserId != null && sessionUserId.equals(userId)) {
+                session.sendMessage(new TextMessage(
+                        convertFishbowlDTOMapToJson(data, fishbowlToken)));
+            }
+        }
+    }
+
     private Map<String, FishbowlRealTimeDto> valueFormattingUseFishbowlList(Map<String, Object> allData) {
         String regex3 = "^([^/]+)/([^/]+)/([^/]+)/([^/]+)$"; // 3개 그룹
         Pattern pattern3 = Pattern.compile(regex3);
+
+        String regex2 = "^([^/]+)/([^/]+)/([^/]+)$"; // 3개 그룹
+        Pattern pattern2 = Pattern.compile(regex2);
+
         Map<String, FishbowlRealTimeDto> maps = new HashMap<>();
 
         for (String key : allData.keySet()) {
             Matcher matcher3 = pattern3.matcher(key);
+            Matcher matcher2 = pattern2.matcher(key);
+
+            if (matcher2.matches()) {
+                String fishbowlId = matcher2.group(2);
+                String fishbowlDept = matcher2.group(4);
+
+                if (!maps.containsKey(fishbowlId)) {
+                    maps.put(fishbowlId, new FishbowlRealTimeDto());
+                }
+
+                switch (fishbowlDept) {
+                    case "name" -> maps.get(fishbowlId)
+                            .setName((String)allData.get(key));
+                }
+            }
+
             if (matcher3.matches()) {
                 String fishbowlId = matcher3.group(2);
                 String fishbowlDept = matcher3.group(4);
@@ -312,30 +347,31 @@ public class ChatHandler extends TextWebSocketHandler {
     }
 
     private FishbowlRealTimeDto ObjectMapToDtoMap(Entry<String, Object> entry) {
-        Map<String, Object> FishbowlDtoObjectType = (Map<String, Object>) entry.getValue();
+        Map<String, Object> fishbowlDtoObjectType = (Map<String, Object>) entry.getValue();
 
         return FishbowlRealTimeDto.builder()
+                .name((String) fishbowlDtoObjectType.get("name"))
                 .warningMinPh(
                         convertToDouble(
-                                ((Map<String, Object>) FishbowlDtoObjectType.get("ph")).get("warningMinPh")))
+                                ((Map<String, Object>) fishbowlDtoObjectType.get("ph")).get("warningMinPh")))
                 .warningMaxPh(
                         convertToDouble(
-                                ((Map<String, Object>) FishbowlDtoObjectType.get("ph")).get("warningMaxPh")))
+                                ((Map<String, Object>) fishbowlDtoObjectType.get("ph")).get("warningMaxPh")))
                 .phState(
                         convertToDouble(
-                                ((Map<String, Object>) FishbowlDtoObjectType.get("now")).get("phState")))
+                                ((Map<String, Object>) fishbowlDtoObjectType.get("now")).get("phState")))
                 .tempState(
                         convertToDouble(
-                                ((Map<String, Object>) FishbowlDtoObjectType.get("now")).get("tempState")))
+                                ((Map<String, Object>) fishbowlDtoObjectType.get("now")).get("tempState")))
                 .tempStay(
                         convertToDouble(
-                                ((Map<String, Object>) FishbowlDtoObjectType.get("temp")).get("tempStay")))
+                                ((Map<String, Object>) fishbowlDtoObjectType.get("temp")).get("tempStay")))
                 .co2State(
-                        (Boolean) ((Map<String, Object>) FishbowlDtoObjectType.get("now")).get("co2State"))
+                        (Boolean) ((Map<String, Object>) fishbowlDtoObjectType.get("now")).get("co2State"))
                 .filterState(
-                        (Long) ((Map<String, Object>) FishbowlDtoObjectType.get("now")).get("filterState"))
+                        (Long) ((Map<String, Object>) fishbowlDtoObjectType.get("now")).get("filterState"))
                 .lightState(
-                        (Boolean) ((Map<String, Object>) FishbowlDtoObjectType.get("now")).get("lightState"))
+                        (Boolean) ((Map<String, Object>) fishbowlDtoObjectType.get("now")).get("lightState"))
                 .build();
     }
 
@@ -352,9 +388,12 @@ public class ChatHandler extends TextWebSocketHandler {
 
     public static String convertFishbowlDTOMapToJson(Map<String, ?> map, String fishbowlId) {
         ObjectMapper objectMapper = new ObjectMapper();
+        Map<String, Object> maps = new HashMap<>();
+
         try {
+            maps.put(fishbowlId, map.get(fishbowlId));
             // Map을 JSON 문자열로 변환
-            return objectMapper.writeValueAsString(map.get(fishbowlId));
+            return objectMapper.writeValueAsString(maps);
         } catch (Exception e) {
             e.printStackTrace();
             return "{}"; // 변환 실패 시 빈 JSON 반환

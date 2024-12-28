@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class FishbowlRealTimeDto {
+    private String name;
     private boolean co2State;
     private boolean lightState;
     private long filterState;
